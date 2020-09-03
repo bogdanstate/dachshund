@@ -136,7 +136,7 @@ fn test_full_prune_small_clique() -> CLQResult<()> {
 
     // with pruning at degree < 3
     let (sender_prune, _receiver_prune) = channel();
-    
+
     let transformer_prune = Transformer::new(
         ts.clone(),
         20,
@@ -192,13 +192,7 @@ fn test_full_prune_small_clique() -> CLQResult<()> {
         transformer.build_pruned_graph::<TypedGraphBuilder, TypedGraph>(graph_id, &rows)?;
     let v = Vec::new();
     let result = transformer
-        .process_clique_rows::<TypedGraphBuilder, TypedGraph>(
-            &graph,
-            &v,
-            graph_id,
-            false,
-            &sender,
-        )?
+        .process_clique_rows::<TypedGraphBuilder, TypedGraph>(&graph, &v, graph_id, false, &sender)?
         .ok_or_else(CLQError::err_none)?;
     sender.send(("".to_string(), true)).unwrap();
     let candidate = result.top_candidate;

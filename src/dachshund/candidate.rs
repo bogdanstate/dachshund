@@ -9,8 +9,8 @@ extern crate rustc_serialize;
 use std::cmp::Reverse;
 use std::cmp::{Eq, PartialEq};
 use std::collections::hash_map::DefaultHasher;
-use std::collections::HashSet;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
@@ -313,12 +313,17 @@ impl<'a, TGraph: GraphBase> Candidate<'a, TGraph> {
                 Some(t) => target_types[t.value() - 1].clone(),
                 None => core_type.to_string(),
             };
-            output.send((format!(
-                "{}\t{}\t{}",
-                graph_id.value(),
-                output_row.node_id.value(),
-                node_type
-            ), false)).unwrap();
+            output
+                .send((
+                    format!(
+                        "{}\t{}\t{}",
+                        graph_id.value(),
+                        output_row.node_id.value(),
+                        node_type
+                    ),
+                    false,
+                ))
+                .unwrap();
         }
         Ok(())
     }
@@ -334,7 +339,7 @@ impl<'a, TGraph: GraphBase> Candidate<'a, TGraph> {
                 true => self.score,
                 false => None,
             },
-            max_core_node_edges : self.max_core_node_edges,
+            max_core_node_edges: self.max_core_node_edges,
             ties_between_nodes: self.ties_between_nodes,
             local_guarantee: self.local_guarantee.clone(),
             neighborhood: self.neighborhood.clone(),
@@ -365,8 +370,11 @@ impl<'a, TGraph: GraphBase> Candidate<'a, TGraph> {
         visited_candidates: &mut HashSet<u64>,
     ) -> CLQResult<Vec<Self>> {
         assert!(!visited_candidates.contains(&self.checksum.unwrap()));
-        let mut tie_counts : Vec<(NodeId, usize)> = self.neighborhood
-            .iter().map(|(&node_id, &edge_count)| (node_id, edge_count)).collect();
+        let mut tie_counts: Vec<(NodeId, usize)> = self
+            .neighborhood
+            .iter()
+            .map(|(&node_id, &edge_count)| (node_id, edge_count))
+            .collect();
 
         // sort by number of ties, with node_id as tie breaker for deterministic behaviour
         // [TODO] Instead of sorting the entire list, use a min heap to keep the
@@ -418,7 +426,8 @@ impl<'a, TGraph: GraphBase> Candidate<'a, TGraph> {
     // Update the size to account for for adding node_id. Can be called immediately before
     // or after inserting the node into the set of ids. Only call this when adding a noncore node.
     fn increment_max_core_node_edges(&mut self, node_id: NodeId) -> CLQResult<()> {
-        let new_edge_count = self.get_node(node_id)
+        let new_edge_count = self
+            .get_node(node_id)
             .max_edge_count_with_core_node()?
             .ok_or_else(CLQError::err_none)?;
         self.max_core_node_edges += new_edge_count;
@@ -442,10 +451,10 @@ impl<'a, TGraph: GraphBase> Candidate<'a, TGraph> {
     // as applicable.
     pub fn local_thresh_score_at_least(&mut self, thresh: f32) -> bool {
         if thresh == 0.0 {
-            return true
+            return true;
         }
 
-        let previous_thresh : f32;
+        let previous_thresh: f32;
         let nodes_to_check;
 
         // If we have a local guarantee, and it's stricter than the threshold we're
@@ -454,12 +463,15 @@ impl<'a, TGraph: GraphBase> Candidate<'a, TGraph> {
             None => {
                 previous_thresh = 1.0;
                 nodes_to_check = &self.core_ids;
-            },
+            }
             Some(guarantee) => {
                 previous_thresh = guarantee.thresh;
-                nodes_to_check = if previous_thresh >= thresh
-                    {&guarantee.exceptions} else {&self.core_ids};
-            },
+                nodes_to_check = if previous_thresh >= thresh {
+                    &guarantee.exceptions
+                } else {
+                    &self.core_ids
+                };
+            }
         };
 
         for &node_id in nodes_to_check {
@@ -469,16 +481,18 @@ impl<'a, TGraph: GraphBase> Candidate<'a, TGraph> {
                 thresh,
                 &self.non_core_ids,
                 self.max_core_node_edges,
-            ){ return false }
+            ) {
+                return false;
+            }
         }
 
         // If we passed the local density check, we can update the guarantee.
         // In practice, we tend to call this function repeatedly with the same
         // threshold, so we optimize for fewer exceptions instead of a higher
         // thresh.
-        self.local_guarantee = Some(LocalDensityGuarantee{
-                thresh: previous_thresh.min(thresh),
-                exceptions: HashSet::new()
+        self.local_guarantee = Some(LocalDensityGuarantee {
+            thresh: previous_thresh.min(thresh),
+            exceptions: HashSet::new(),
         });
         true
     }
@@ -498,7 +512,8 @@ impl<'a, TGraph: GraphBase> Candidate<'a, TGraph> {
     // immediately before or immediately after inserting node into the set of ids.
     fn increment_ties_between_nodes(&mut self, node_id: NodeId) {
         let new_ties = if self.graph.get_node(node_id).is_core() {
-            self.get_node(node_id).count_ties_with_ids(&self.non_core_ids)
+            self.get_node(node_id)
+                .count_ties_with_ids(&self.non_core_ids)
         } else {
             self.get_node(node_id).count_ties_with_ids(&self.core_ids)
         };
@@ -510,10 +525,14 @@ impl<'a, TGraph: GraphBase> Candidate<'a, TGraph> {
     // edges count in self.neighborhood increased by one, and the node we're
     // adding needs to be removed, since it is no longer adjacent to the clique.
     fn adjust_neighborhood(&mut self, node_id: NodeId) {
-        let opposite_shore = if self.graph.get_node(node_id).is_core()
-            { &self.non_core_ids } else { &self.core_ids };
+        let opposite_shore = if self.graph.get_node(node_id).is_core() {
+            &self.non_core_ids
+        } else {
+            &self.core_ids
+        };
 
-        let neighbors : Vec<NodeId> = self.get_node(node_id)
+        let neighbors: Vec<NodeId> = self
+            .get_node(node_id)
             .edges
             .iter()
             .map(|x| x.target_id)
