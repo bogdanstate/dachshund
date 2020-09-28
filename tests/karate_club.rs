@@ -14,7 +14,9 @@ use lib_dachshund::dachshund::betweenness::Betweenness;
 use lib_dachshund::dachshund::brokerage::Brokerage;
 use lib_dachshund::dachshund::clustering::Clustering;
 use lib_dachshund::dachshund::cnm_communities::CNMCommunities;
-use lib_dachshund::dachshund::connected_components::ConnectedComponents;
+use lib_dachshund::dachshund::connected_components::{
+    ConnectedComponentsDirected, ConnectedComponentsUndirected
+};
 use lib_dachshund::dachshund::connectivity::Connectivity;
 use lib_dachshund::dachshund::coreness::Coreness;
 use lib_dachshund::dachshund::eigenvector_centrality::EigenvectorCentrality;
@@ -535,4 +537,11 @@ fn test_brokerage() {
                    expected_counts[node_id.value() as usize].4);
         
     };
+}
+#[test]
+fn test_weakly_connected_components() {
+    let gd = get_directed_karate_club_graph(); 
+    let cc = gd.get_weakly_connected_components();
+    assert_eq!(cc[0].len(), 34);
+    assert_eq!(cc.len(), 1);
 }
