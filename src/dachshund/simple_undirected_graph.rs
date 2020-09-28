@@ -69,6 +69,12 @@ impl GraphBase for SimpleUndirectedGraph {
     fn count_nodes(&self) -> usize {
         self.nodes.len()
     }
+    fn create_empty() -> Self {
+        SimpleUndirectedGraph {
+            nodes: HashMap::new(),
+            ids: Vec::new(),
+        }
+    }
 }
 impl SimpleUndirectedGraph {
     pub fn as_input_rows(&self, graph_id: usize) -> String {
@@ -89,12 +95,6 @@ impl SimpleUndirectedGraph {
     }
     pub fn get_node_degree(&self, id: NodeId) -> usize {
         self.nodes[&id].degree()
-    }
-    pub fn create_empty() -> Self {
-        Self {
-            nodes: HashMap::new(),
-            ids: Vec::new(),
-        }
     }
 }
 impl UndirectedGraph for SimpleUndirectedGraph {}
