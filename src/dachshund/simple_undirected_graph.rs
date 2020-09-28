@@ -9,10 +9,9 @@ use crate::dachshund::algebraic_connectivity::AlgebraicConnectivity;
 use crate::dachshund::betweenness::Betweenness;
 use crate::dachshund::clustering::Clustering;
 use crate::dachshund::cnm_communities::CNMCommunities;
-use crate::dachshund::connected_components::{
-  ConnectedComponents, ConnectedComponentsUndirected
-};
+use crate::dachshund::connected_components::{ConnectedComponents, ConnectedComponentsUndirected};
 use crate::dachshund::connectivity::Connectivity;
+use crate::dachshund::connectivity::ConnectivityUndirected;
 use crate::dachshund::coreness::Coreness;
 use crate::dachshund::eigenvector_centrality::EigenvectorCentrality;
 use crate::dachshund::graph_base::GraphBase;
@@ -25,8 +24,10 @@ use std::collections::hash_map::{Keys, Values};
 use std::collections::HashMap;
 
 pub trait UndirectedGraph
-where Self: GraphBase  
-{}
+where
+    Self: GraphBase,
+{
+}
 /// Keeps track of a simple undirected graph, composed of nodes without any type information.
 pub struct SimpleUndirectedGraph {
     pub nodes: HashMap<NodeId, SimpleNode>,
@@ -68,6 +69,12 @@ impl GraphBase for SimpleUndirectedGraph {
     fn count_nodes(&self) -> usize {
         self.nodes.len()
     }
+    fn create_empty() -> Self {
+        SimpleUndirectedGraph {
+            nodes: HashMap::new(),
+            ids: Vec::new(),
+        }
+    }
 }
 impl SimpleUndirectedGraph {
     pub fn as_input_rows(&self, graph_id: usize) -> String {
@@ -89,12 +96,6 @@ impl SimpleUndirectedGraph {
     pub fn get_node_degree(&self, id: NodeId) -> usize {
         self.nodes[&id].degree()
     }
-    pub fn create_empty() -> Self {
-        Self {
-            nodes: HashMap::new(),
-            ids: Vec::new(),
-        }
-    }
 }
 impl UndirectedGraph for SimpleUndirectedGraph {}
 
@@ -104,9 +105,10 @@ impl ConnectedComponentsUndirected for SimpleUndirectedGraph {}
 impl Coreness for SimpleUndirectedGraph {}
 
 impl AdjacencyMatrix for SimpleUndirectedGraph {}
-impl Betweenness for SimpleUndirectedGraph {}
 impl Clustering for SimpleUndirectedGraph {}
 impl Connectivity for SimpleUndirectedGraph {}
+impl ConnectivityUndirected for SimpleUndirectedGraph {}
+impl Betweenness for SimpleUndirectedGraph {}
 impl Laplacian for SimpleUndirectedGraph {}
 impl Transitivity for SimpleUndirectedGraph {}
 impl ShortestPaths for SimpleUndirectedGraph {}
