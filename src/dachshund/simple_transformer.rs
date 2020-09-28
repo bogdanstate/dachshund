@@ -9,7 +9,7 @@ extern crate serde_json;
 
 use crate::dachshund::betweenness::Betweenness;
 use crate::dachshund::clustering::Clustering;
-use crate::dachshund::connected_components::ConnectedComponents;
+use crate::dachshund::connected_components::ConnectedComponentsUndirected;
 use crate::dachshund::coreness::Coreness;
 use crate::dachshund::eigenvector_centrality::EigenvectorCentrality;
 use crate::dachshund::error::CLQResult;

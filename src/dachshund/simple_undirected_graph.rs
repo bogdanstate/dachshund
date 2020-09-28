@@ -9,7 +9,9 @@ use crate::dachshund::algebraic_connectivity::AlgebraicConnectivity;
 use crate::dachshund::betweenness::Betweenness;
 use crate::dachshund::clustering::Clustering;
 use crate::dachshund::cnm_communities::CNMCommunities;
-use crate::dachshund::connected_components::ConnectedComponents;
+use crate::dachshund::connected_components::{
+  ConnectedComponents, ConnectedComponentsUndirected
+};
 use crate::dachshund::connectivity::Connectivity;
 use crate::dachshund::coreness::Coreness;
 use crate::dachshund::eigenvector_centrality::EigenvectorCentrality;
@@ -22,6 +24,9 @@ use crate::dachshund::transitivity::Transitivity;
 use std::collections::hash_map::{Keys, Values};
 use std::collections::HashMap;
 
+pub trait UndirectedGraph
+where Self: GraphBase  
+{}
 /// Keeps track of a simple undirected graph, composed of nodes without any type information.
 pub struct SimpleUndirectedGraph {
     pub nodes: HashMap<NodeId, SimpleNode>,
@@ -91,9 +96,11 @@ impl SimpleUndirectedGraph {
         }
     }
 }
+impl UndirectedGraph for SimpleUndirectedGraph {}
 
 impl CNMCommunities for SimpleUndirectedGraph {}
 impl ConnectedComponents for SimpleUndirectedGraph {}
+impl ConnectedComponentsUndirected for SimpleUndirectedGraph {}
 impl Coreness for SimpleUndirectedGraph {}
 
 impl AdjacencyMatrix for SimpleUndirectedGraph {}
