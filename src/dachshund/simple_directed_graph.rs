@@ -5,18 +5,18 @@
  * LICENSE file in the root directory of this source tree.
  */
 use crate::dachshund::brokerage::Brokerage;
+use crate::dachshund::connected_components::{ConnectedComponents, ConnectedComponentsDirected};
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::node::{NodeBase, SimpleDirectedNode};
 use std::collections::hash_map::{Keys, Values};
 use std::collections::HashMap;
-use crate::dachshund::connected_components::{
-  ConnectedComponents, ConnectedComponentsDirected
-};
 
 pub trait DirectedGraph
-where Self: GraphBase  
-{}
+where
+    Self: GraphBase,
+{
+}
 pub struct SimpleDirectedGraph {
     pub nodes: HashMap<NodeId, SimpleDirectedNode>,
     pub ids: Vec<NodeId>,

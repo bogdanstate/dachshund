@@ -8,7 +8,7 @@ extern crate lib_dachshund;
 use crate::lib_dachshund::TransformerBase;
 use lib_dachshund::dachshund::cnm_communities::CNMCommunities;
 use lib_dachshund::dachshund::connected_components::{
-    ConnectedComponentsUndirected, ConnectedComponents
+    ConnectedComponents, ConnectedComponentsUndirected,
 };
 use lib_dachshund::dachshund::coreness::Coreness;
 use lib_dachshund::dachshund::id_types::NodeId;

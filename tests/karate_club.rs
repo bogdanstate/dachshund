@@ -15,9 +15,9 @@ use lib_dachshund::dachshund::brokerage::Brokerage;
 use lib_dachshund::dachshund::clustering::Clustering;
 use lib_dachshund::dachshund::cnm_communities::CNMCommunities;
 use lib_dachshund::dachshund::connected_components::{
-    ConnectedComponentsDirected, ConnectedComponentsUndirected
+    ConnectedComponentsDirected, ConnectedComponentsUndirected,
 };
-use lib_dachshund::dachshund::connectivity::Connectivity;
+use lib_dachshund::dachshund::connectivity::ConnectivityUndirected;
 use lib_dachshund::dachshund::coreness::Coreness;
 use lib_dachshund::dachshund::eigenvector_centrality::EigenvectorCentrality;
 use lib_dachshund::dachshund::graph_base::GraphBase;
@@ -476,7 +476,6 @@ fn test_cnm_community() {
 
 #[test]
 fn test_brokerage() {
-   
     let expected_counts = vec![
         (0, 0, 0, 0, 0, 0),
         (0, 0, 0, 0, 0, 0),
@@ -512,35 +511,44 @@ fn test_brokerage() {
         (0, 0, 0, 2, 0, 2),
         (5, 0, 0, 2, 0, 7),
         (0, 0, 0, 1, 0, 1),
-        (0, 0, 0, 0, 0, 0), 
+        (0, 0, 0, 0, 0, 0),
     ];
-    let g = get_directed_karate_club_graph(); 
+    let g = get_directed_karate_club_graph();
     let mut c: HashMap<NodeId, usize> = HashMap::new();
     for node_id in g.get_ids_iter() {
         c.insert(*node_id, 1 + ((node_id.value() <= 17) as usize));
     }
     for node_id in g.get_ids_iter() {
-        let scores = g.get_brokerage_scores_for_node(
-            *node_id, &c
+        let scores = g.get_brokerage_scores_for_node(*node_id, &c);
+        assert_eq!(
+            scores.total_open_twopaths,
+            expected_counts[node_id.value() as usize].5
         );
-        assert_eq!(scores.total_open_twopaths,
-                   expected_counts[node_id.value() as usize].5);
-        assert_eq!(scores.num_coordinator_ties, 
-                   expected_counts[node_id.value() as usize].0);
-        assert_eq!(scores.num_itinerant_broker_ties, 
-                   expected_counts[node_id.value() as usize].1);
-        assert_eq!(scores.num_representative_ties, 
-                   expected_counts[node_id.value() as usize].2);
-        assert_eq!(scores.num_gatekeeper_ties, 
-                   expected_counts[node_id.value() as usize].3);
-        assert_eq!(scores.num_liaison_ties, 
-                   expected_counts[node_id.value() as usize].4);
-        
-    };
+        assert_eq!(
+            scores.num_coordinator_ties,
+            expected_counts[node_id.value() as usize].0
+        );
+        assert_eq!(
+            scores.num_itinerant_broker_ties,
+            expected_counts[node_id.value() as usize].1
+        );
+        assert_eq!(
+            scores.num_representative_ties,
+            expected_counts[node_id.value() as usize].2
+        );
+        assert_eq!(
+            scores.num_gatekeeper_ties,
+            expected_counts[node_id.value() as usize].3
+        );
+        assert_eq!(
+            scores.num_liaison_ties,
+            expected_counts[node_id.value() as usize].4
+        );
+    }
 }
 #[test]
 fn test_weakly_connected_components() {
-    let gd = get_directed_karate_club_graph(); 
+    let gd = get_directed_karate_club_graph();
     let cc = gd.get_weakly_connected_components();
     assert_eq!(cc[0].len(), 34);
     assert_eq!(cc.len(), 1);
