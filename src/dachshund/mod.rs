@@ -8,6 +8,7 @@ pub mod adjacency_matrix;
 pub mod algebraic_connectivity;
 pub mod beam;
 pub mod betweenness;
+pub mod brokerage;
 pub mod candidate;
 pub mod clustering;
 pub mod cnm_communities;
