@@ -10,6 +10,7 @@ extern crate lib_dachshund;
 extern crate test;
 
 use lib_dachshund::dachshund::clustering::Clustering;
+use lib_dachshund::dachshund::graph_builder_base::GraphBuilderBase;
 use lib_dachshund::dachshund::id_types::NodeId;
 use lib_dachshund::dachshund::simple_undirected_graph::SimpleUndirectedGraph;
 use lib_dachshund::dachshund::simple_undirected_graph_builder::SimpleUndirectedGraphBuilder;

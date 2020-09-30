@@ -15,13 +15,15 @@ use lib_dachshund::dachshund::brokerage::Brokerage;
 use lib_dachshund::dachshund::clustering::Clustering;
 use lib_dachshund::dachshund::cnm_communities::CNMCommunities;
 use lib_dachshund::dachshund::connected_components::{
-    ConnectedComponentsDirected, ConnectedComponentsUndirected
+    ConnectedComponentsDirected, ConnectedComponentsUndirected,
 };
-use lib_dachshund::dachshund::connectivity::Connectivity;
+use lib_dachshund::dachshund::connectivity::{ConnectivityUndirected, ConnectivityDirected};
 use lib_dachshund::dachshund::coreness::Coreness;
 use lib_dachshund::dachshund::eigenvector_centrality::EigenvectorCentrality;
 use lib_dachshund::dachshund::graph_base::GraphBase;
+use lib_dachshund::dachshund::graph_builder_base::GraphBuilderBase;
 use lib_dachshund::dachshund::id_types::NodeId;
+use lib_dachshund::dachshund::node::DirectedNodeBase;
 use lib_dachshund::dachshund::laplacian::Laplacian;
 use lib_dachshund::dachshund::shortest_paths::ShortestPaths;
 use lib_dachshund::dachshund::simple_directed_graph::SimpleDirectedGraph;
@@ -114,15 +116,22 @@ fn get_karate_club_edges() -> Vec<(usize, usize)> {
         (33, 34),
     ]
 }
-fn get_karate_club_graph_with_one_extra_edge() -> SimpleUndirectedGraph {
+fn _get_karate_club_graph_with_one_extra_edge<T, R>() -> R
+where R: GraphBase, T: GraphBuilderBase<GraphType = R> {
     let mut rows = get_karate_club_edges();
     rows.push((35, 36));
-    SimpleUndirectedGraphBuilder::from_vector(
+    T::from_vector(
         &rows
             .into_iter()
             .map(|(x, y)| (x as i64, y as i64))
             .collect(),
     )
+}
+fn get_karate_club_graph_with_one_extra_edge() -> SimpleUndirectedGraph {
+    _get_karate_club_graph_with_one_extra_edge::<SimpleUndirectedGraphBuilder, _>()
+}
+fn get_directed_karate_club_graph_with_one_extra_edge() -> SimpleDirectedGraph {
+    _get_karate_club_graph_with_one_extra_edge::<SimpleDirectedGraphBuilder, _>()
 }
 
 fn get_two_karate_clubs_edges() -> Vec<(usize, usize)> {
@@ -133,20 +142,64 @@ fn get_two_karate_clubs_edges() -> Vec<(usize, usize)> {
     rows
 }
 
-fn get_two_karate_clubs() -> SimpleUndirectedGraph {
+fn _get_two_karate_clubs<T, R>() -> R
+where R: GraphBase, T: GraphBuilderBase<GraphType = R> {
     let rows = get_two_karate_clubs_edges();
-    SimpleUndirectedGraphBuilder::from_vector(
+    T::from_vector(
         &rows
             .into_iter()
             .map(|(x, y)| (x as i64, y as i64))
             .collect(),
     )
 }
+fn get_two_karate_clubs() -> SimpleUndirectedGraph {
+    _get_two_karate_clubs::<SimpleUndirectedGraphBuilder, _>()
+}
+fn get_directed_karate_club_graph_both_ways() -> SimpleDirectedGraph {
+    let rows = get_karate_club_edges();
+    let graph = SimpleDirectedGraphBuilder::from_vector(
+        &rows
+            .iter().cloned()
+            .map(|(x, y)| (x as i64, y as i64))
+            .chain(rows.iter().cloned().map(|(x, y)| (y as i64, x as i64)))
+            .collect()
+    );
+    for node in graph.get_nodes_iter() {
+        assert_eq!(node.get_in_degree(), node.get_out_degree());
+    }
+    graph
+}
+fn get_directed_karate_club_graph_with_core(core: HashSet<usize>) -> SimpleDirectedGraph {
+    let rows = get_karate_club_edges();
+    let graph = SimpleDirectedGraphBuilder::from_vector(
+        &rows
+            .iter().cloned()
+            .map(|(x, y)| (x as i64, y as i64))
+            .chain(rows.iter().cloned().filter(|(x, y)| core.contains(x) && core.contains(y)).map(|(x, y)| (y as i64, x as i64)))
+            .collect()
+    );
+    graph
+}
 
-fn get_two_karate_clubs_with_bridge() -> SimpleUndirectedGraph {
+fn _get_two_karate_clubs_with_bridge<T, R>() -> R
+where R: GraphBase, T: GraphBuilderBase<GraphType = R> {
     let mut rows = get_two_karate_clubs_edges();
     rows.push((34, 35));
-    SimpleUndirectedGraphBuilder::from_vector(
+    T::from_vector(
+        &rows
+            .into_iter()
+            .map(|(x, y)| (x as i64, y as i64))
+            .collect(),
+    )
+}
+fn get_two_karate_clubs_with_bridge() -> SimpleUndirectedGraph {
+    _get_two_karate_clubs_with_bridge::<SimpleUndirectedGraphBuilder, _>()
+}
+
+fn _get_karate_club_graph<T, R>() -> R
+where R: GraphBase, T: GraphBuilderBase<GraphType = R> {
+    let rows = get_karate_club_edges();
+    T::from_vector(
         &rows
             .into_iter()
             .map(|(x, y)| (x as i64, y as i64))
@@ -154,22 +207,10 @@ fn get_two_karate_clubs_with_bridge() -> SimpleUndirectedGraph {
     )
 }
 fn get_karate_club_graph() -> SimpleUndirectedGraph {
-    let rows = get_karate_club_edges();
-    SimpleUndirectedGraphBuilder::from_vector(
-        &rows
-            .into_iter()
-            .map(|(x, y)| (x as i64, y as i64))
-            .collect(),
-    )
+    _get_karate_club_graph::<SimpleUndirectedGraphBuilder, _>()
 }
 fn get_directed_karate_club_graph() -> SimpleDirectedGraph {
-    let rows = get_karate_club_edges();
-    SimpleDirectedGraphBuilder::from_vector(
-        &rows
-            .into_iter()
-            .map(|(x, y)| (x as i64, y as i64))
-            .collect(),
-    )
+    _get_karate_club_graph::<SimpleDirectedGraphBuilder, _>()
 }
 
 #[cfg(test)]
@@ -476,7 +517,6 @@ fn test_cnm_community() {
 
 #[test]
 fn test_brokerage() {
-   
     let expected_counts = vec![
         (0, 0, 0, 0, 0, 0),
         (0, 0, 0, 0, 0, 0),
@@ -512,36 +552,70 @@ fn test_brokerage() {
         (0, 0, 0, 2, 0, 2),
         (5, 0, 0, 2, 0, 7),
         (0, 0, 0, 1, 0, 1),
-        (0, 0, 0, 0, 0, 0), 
+        (0, 0, 0, 0, 0, 0),
     ];
-    let g = get_directed_karate_club_graph(); 
+    let g = get_directed_karate_club_graph();
     let mut c: HashMap<NodeId, usize> = HashMap::new();
     for node_id in g.get_ids_iter() {
         c.insert(*node_id, 1 + ((node_id.value() <= 17) as usize));
     }
     for node_id in g.get_ids_iter() {
-        let scores = g.get_brokerage_scores_for_node(
-            *node_id, &c
+        let scores = g.get_brokerage_scores_for_node(*node_id, &c);
+        assert_eq!(
+            scores.total_open_twopaths,
+            expected_counts[node_id.value() as usize].5
         );
-        assert_eq!(scores.total_open_twopaths,
-                   expected_counts[node_id.value() as usize].5);
-        assert_eq!(scores.num_coordinator_ties, 
-                   expected_counts[node_id.value() as usize].0);
-        assert_eq!(scores.num_itinerant_broker_ties, 
-                   expected_counts[node_id.value() as usize].1);
-        assert_eq!(scores.num_representative_ties, 
-                   expected_counts[node_id.value() as usize].2);
-        assert_eq!(scores.num_gatekeeper_ties, 
-                   expected_counts[node_id.value() as usize].3);
-        assert_eq!(scores.num_liaison_ties, 
-                   expected_counts[node_id.value() as usize].4);
-        
-    };
+        assert_eq!(
+            scores.num_coordinator_ties,
+            expected_counts[node_id.value() as usize].0
+        );
+        assert_eq!(
+            scores.num_itinerant_broker_ties,
+            expected_counts[node_id.value() as usize].1
+        );
+        assert_eq!(
+            scores.num_representative_ties,
+            expected_counts[node_id.value() as usize].2
+        );
+        assert_eq!(
+            scores.num_gatekeeper_ties,
+            expected_counts[node_id.value() as usize].3
+        );
+        assert_eq!(
+            scores.num_liaison_ties,
+            expected_counts[node_id.value() as usize].4
+        );
+    }
 }
 #[test]
 fn test_weakly_connected_components() {
-    let gd = get_directed_karate_club_graph(); 
+    let gd = get_directed_karate_club_graph();
     let cc = gd.get_weakly_connected_components();
     assert_eq!(cc[0].len(), 34);
     assert_eq!(cc.len(), 1);
+}
+#[test]
+fn test_connectivity_directed() {
+    let graph = get_directed_karate_club_graph();
+    assert!(graph.get_is_weakly_connected().unwrap());
+    let graph_unconnected = get_directed_karate_club_graph_with_one_extra_edge();
+    assert!(!graph_unconnected.get_is_weakly_connected().unwrap());
+
+    let graph_empty = SimpleDirectedGraph::create_empty();
+    assert!(graph_empty.get_is_weakly_connected().is_err(), "Graph is empty");
+
+    assert_eq!(graph.get_strongly_connected_components().len(),
+               graph.count_nodes());
+
+    let graph_both_ways = get_directed_karate_club_graph_both_ways();
+    assert_eq!(graph_both_ways.get_strongly_connected_components().len(), 1);
+
+    let core = vec![1, 2, 3];
+    let graph_with_core = get_directed_karate_club_graph_with_core(core.into_iter().collect::<HashSet<usize>>());
+    let scc = graph_with_core.get_strongly_connected_components();
+    assert_eq!(scc.len(), 32);
+    assert_eq!(scc[0].len(), 3);
+    assert!(scc[0].iter().collect::<HashSet<&NodeId>>().contains(&NodeId::from(1)));
+    assert!(scc[0].iter().collect::<HashSet<&NodeId>>().contains(&NodeId::from(2)));
+    assert!(scc[0].iter().collect::<HashSet<&NodeId>>().contains(&NodeId::from(3)));
 }

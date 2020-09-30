@@ -5,12 +5,16 @@
  * LICENSE file in the root directory of this source tree.
  */
 use crate::dachshund::connectivity::Connectivity;
+use crate::dachshund::connectivity::ConnectivityUndirected;
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::shortest_paths::ShortestPaths;
+use crate::dachshund::simple_undirected_graph::UndirectedGraph;
 use std::collections::HashMap;
 
-pub trait Betweenness: GraphBase + Connectivity + ShortestPaths {
+pub trait Betweenness:
+    GraphBase + UndirectedGraph + Connectivity + ShortestPaths + ConnectivityUndirected
+{
     fn get_node_betweenness_starting_from_sources(
         &self,
         sources: &[NodeId],

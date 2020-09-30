@@ -49,7 +49,10 @@ where
     type NodeEdgeType: NodeEdgeBase + Sized;
 
     fn get_id(&self) -> NodeId;
+    // used to return *all* edges
     fn get_edges(&self) -> Box<dyn Iterator<Item = &Self::NodeEdgeType> + '_>;
+    // used to return *outgoing* edges only (to perform a traversal)
+    fn get_outgoing_edges(&self) -> Box<dyn Iterator<Item = &Self::NodeEdgeType> + '_>;
     fn degree(&self) -> usize;
     fn count_ties_with_ids(&self, ids: &HashSet<NodeId>) -> usize;
 }
@@ -82,6 +85,9 @@ impl NodeBase for Node {
     }
     fn get_edges(&self) -> Box<dyn Iterator<Item = &NodeEdge> + '_> {
         Box::new(self.edges.iter())
+    }
+    fn get_outgoing_edges(&self) -> Box<dyn Iterator<Item = &NodeEdge> + '_> {
+        self.get_edges()
     }
     /// degree is the edge count (in an unweighted graph)
     fn degree(&self) -> usize {
@@ -164,6 +170,9 @@ impl NodeBase for SimpleNode {
     fn get_edges(&self) -> Box<dyn Iterator<Item = &NodeId> + '_> {
         Box::new(self.neighbors.iter())
     }
+    fn get_outgoing_edges(&self) -> Box<dyn Iterator<Item = &NodeId> + '_> {
+        self.get_edges()
+    }
     /// degree is the edge count (in an unweighted graph)
     fn degree(&self) -> usize {
         self.neighbors.len()
@@ -183,6 +192,8 @@ pub trait DirectedNodeBase: NodeBase {
     fn get_out_neighbors(&self) -> Box<dyn Iterator<Item = &Self::NodeEdgeType> + '_>;
     fn has_in_neighbor(&self, nid: NodeId) -> bool;
     fn has_out_neighbor(&self, nid: NodeId) -> bool;
+    fn get_in_degree(&self) -> usize;
+    fn get_out_degree(&self) -> usize;
 }
 pub struct SimpleDirectedNode {
     pub node_id: NodeId,
@@ -201,6 +212,12 @@ impl DirectedNodeBase for SimpleDirectedNode {
     }
     fn has_out_neighbor(&self, nid: NodeId) -> bool {
         self.out_neighbors.contains(&nid)
+    }
+    fn get_in_degree(&self) -> usize {
+        self.in_neighbors.len()
+    }
+    fn get_out_degree(&self) -> usize {
+        self.out_neighbors.len()
     }
 }
 impl Hash for SimpleDirectedNode {
@@ -222,6 +239,9 @@ impl NodeBase for SimpleDirectedNode {
     }
     fn get_edges(&self) -> Box<dyn Iterator<Item = &NodeId> + '_> {
         Box::new(self.in_neighbors.iter().chain(self.out_neighbors.iter()))
+    }
+    fn get_outgoing_edges(&self) -> Box<dyn Iterator<Item = &NodeId> + '_> {
+        self.get_edges()
     }
     /// degree is the edge count (in an unweighted graph)
     fn degree(&self) -> usize {
