@@ -26,7 +26,7 @@ use lib_dachshund::dachshund::id_types::NodeId;
 use lib_dachshund::dachshund::node::DirectedNodeBase;
 use lib_dachshund::dachshund::laplacian::Laplacian;
 use lib_dachshund::dachshund::shortest_paths::ShortestPaths;
-use lib_dachshund::dachshund::simple_directed_graph::SimpleDirectedGraph;
+use lib_dachshund::dachshund::simple_directed_graph::{DirectedGraph, SimpleDirectedGraph};
 use lib_dachshund::dachshund::simple_directed_graph_builder::SimpleDirectedGraphBuilder;
 use lib_dachshund::dachshund::simple_undirected_graph::SimpleUndirectedGraph;
 use lib_dachshund::dachshund::simple_undirected_graph_builder::SimpleUndirectedGraphBuilder;
@@ -618,4 +618,21 @@ fn test_connectivity_directed() {
     assert!(scc[0].iter().collect::<HashSet<&NodeId>>().contains(&NodeId::from(1)));
     assert!(scc[0].iter().collect::<HashSet<&NodeId>>().contains(&NodeId::from(2)));
     assert!(scc[0].iter().collect::<HashSet<&NodeId>>().contains(&NodeId::from(3)));
+}
+#[test]
+fn test_acyclic_directed() {
+    let graph = get_directed_karate_club_graph();
+    assert!(graph.is_acyclic());
+    let graph_unconnected = get_directed_karate_club_graph_with_one_extra_edge();
+    assert!(graph_unconnected.is_acyclic());
+
+    let graph_empty = SimpleDirectedGraph::create_empty();
+    assert!(graph_empty.is_acyclic());
+
+    let graph_both_ways = get_directed_karate_club_graph_both_ways();
+    assert!(!graph_both_ways.is_acyclic());
+
+    let core = vec![1, 2, 3];
+    let graph_with_core = get_directed_karate_club_graph_with_core(core.into_iter().collect::<HashSet<usize>>());
+    assert!(!graph_with_core.is_acyclic());
 }
