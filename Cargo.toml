@@ -39,6 +39,9 @@ version = "^2.33"
 [dependencies.counter]
 version = "^0.5.2"
 
+[dependencies.log]
+version = "^0.4.11"
+
 [dependencies.rustc-serialize]
 version = "^0.3"
 

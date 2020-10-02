@@ -18,6 +18,7 @@ use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::laplacian::Laplacian;
 use crate::dachshund::node::{NodeBase, NodeEdgeBase, SimpleNode};
+use crate::dachshund::rak_communities::RAKCommunities;
 use crate::dachshund::shortest_paths::ShortestPaths;
 use crate::dachshund::transitivity::Transitivity;
 use std::collections::hash_map::{Keys, Values};
@@ -114,3 +115,4 @@ impl Transitivity for SimpleUndirectedGraph {}
 impl ShortestPaths for SimpleUndirectedGraph {}
 impl AlgebraicConnectivity for SimpleUndirectedGraph {}
 impl EigenvectorCentrality for SimpleUndirectedGraph {}
+impl RAKCommunities for SimpleUndirectedGraph {}

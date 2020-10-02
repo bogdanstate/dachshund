@@ -4,7 +4,6 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-extern crate nalgebra as na;
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::node::{NodeBase, NodeEdgeBase, SimpleNode};
@@ -13,12 +12,14 @@ use riker::actors::{
     Actor, ActorFactoryArgs, ActorRef, ActorRefFactory, ActorSystem, BasicActorRef, Context,
     Sender, Tell,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
+use log::debug;
 
 type CommunityId = NodeId;
+type Community = HashSet<NodeId>;
 type LabelsArcRwLock = Arc<RwLock<HashMap<NodeId, CommunityId>>>;
 
 #[derive(Default, Clone, Debug)]
@@ -33,7 +34,7 @@ impl RAKMessage {
         self.payload
     }
 }
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct LabeledNodeActor {
     node_id: NodeId,
     label: CommunityId,
@@ -48,11 +49,12 @@ impl LabeledNodeActor {
         num_neighbors: usize,
         labels: LabelsArcRwLock,
     ) -> Self {
+        debug!("Creating node with id {}, community {}, num_neighbors {}.", node_id.value(), label.value(), num_neighbors);
         Self {
             node_id: node_id,
             label: label,
             num_neighbors: num_neighbors,
-            messages: Vec::with_capacity(num_neighbors),
+            messages: Vec::new(),
             labels: labels,
         }
     }
@@ -104,17 +106,23 @@ impl Actor for LabeledNodeActor {
 }
 impl ActorFactoryArgs<(NodeId, usize, LabelsArcRwLock)> for LabeledNodeActor {
     fn create_args((node_id, degree, labels): (NodeId, usize, LabelsArcRwLock)) -> Self {
+        debug!("Calling constructor on node with id {}", node_id.value());
+        //Self::new(node_id, node_id.value().try_into().unwrap(), degree, labels);
         Self::new(node_id, node_id.value().try_into().unwrap(), degree, labels)
+        //Self { node_id, label: node_id, degree, labels }
     }
 }
 pub trait RAKCommunities: GraphBase<NodeType = SimpleNode> {
-    fn get_rak_communities(&self) -> HashMap<NodeId, CommunityId> {
+    fn get_rak_communities(&self) -> HashMap<CommunityId, Community> {
         let sys = ActorSystem::new().unwrap();
+        debug!("Actor System created");
         let mut actors: HashMap<NodeId, ActorRef<RAKMessage>> = HashMap::new();
         let labels: LabelsArcRwLock = Arc::new(RwLock::new(HashMap::new()));
 
+
         for node in self.get_nodes_iter() {
-            let actor_name = format!("Node {}", node.get_id().value());
+            let actor_name = format!("node-{}", node.get_id().value());
+            debug!("Calling constructor on node with id {}", node.get_id().value());
             let actor_ref = sys
                 .actor_of_args::<LabeledNodeActor, _>(
                     &actor_name,
@@ -133,9 +141,18 @@ pub trait RAKCommunities: GraphBase<NodeType = SimpleNode> {
             }
         }
         while labels.read().unwrap().len() < self.count_nodes() {
-            std::thread::sleep(Duration::from_millis(5000));
+            std::thread::sleep(Duration::from_millis(100));
         }
-        let lock = Arc::try_unwrap(labels).unwrap();
-        lock.into_inner().unwrap()
+        let mut future = sys.shutdown();
+        assert!(future.try_recv().is_ok());
+
+        let mut communities: HashMap<CommunityId, HashSet<NodeId>> = HashMap::new();
+        for (node_id, community_id) in labels.read().unwrap().iter() {
+            if !communities.contains_key(community_id) {
+                communities.insert(*community_id, HashSet::new());
+            }
+            communities.get_mut(community_id).unwrap().insert(*node_id);
+        }
+        communities
     }
 }

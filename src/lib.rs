@@ -9,6 +9,7 @@
 #![feature(binary_heap_into_iter_sorted)]
 #![feature(associated_type_bounds)]
 extern crate clap;
+extern crate log;
 extern crate rustc_serialize;
 extern crate thiserror;
 
