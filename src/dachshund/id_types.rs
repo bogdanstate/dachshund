@@ -66,7 +66,7 @@ where
 }
 
 /// Uniquely identifies a `Node`, relative an existing `Graph`.
-#[derive(Hash, Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Hash, Copy, Clone, Debug, Default, PartialOrd, Ord, PartialEq, Eq)]
 pub struct NodeId {
     id: i64,
 }

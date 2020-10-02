@@ -27,6 +27,7 @@ pub mod line_processor;
 pub mod node;
 pub mod non_core_type_ids;
 pub mod output;
+pub mod rak_communities;
 pub mod row;
 pub mod scorer;
 pub mod search_problem;

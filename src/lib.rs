@@ -9,7 +9,6 @@
 #![feature(binary_heap_into_iter_sorted)]
 #![feature(associated_type_bounds)]
 extern crate clap;
-extern crate rand;
 extern crate rustc_serialize;
 extern crate thiserror;
 
@@ -36,6 +35,7 @@ pub use dachshund::laplacian::Laplacian;
 pub use dachshund::line_processor::LineProcessor;
 pub use dachshund::node::{Node, SimpleDirectedNode};
 pub use dachshund::output::Output;
+pub use dachshund::rak_communities::RAKCommunities;
 pub use dachshund::row::EdgeRow;
 pub use dachshund::scorer::Scorer;
 pub use dachshund::search_problem::SearchProblem;

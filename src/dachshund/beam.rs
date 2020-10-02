@@ -4,7 +4,6 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-extern crate rand;
 
 use std::collections::hash_map::DefaultHasher;
 use std::collections::{HashMap, HashSet};
