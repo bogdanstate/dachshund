@@ -12,6 +12,6 @@ where
 {
     type GraphType;
 
-    fn from_vector(data: &Vec<(i64, i64)>) -> Self::GraphType;
+    fn from_vector(&self, data: &Vec<(i64, i64)>) -> Self::GraphType;
 }
 
