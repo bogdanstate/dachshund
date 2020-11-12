@@ -27,7 +27,7 @@ fn get_graph(idx: usize) -> Result<SimpleUndirectedGraph, String> {
         ],
         _ => return Err("Invalid index".to_string()),
     };
-    Ok(SimpleUndirectedGraphBuilder::from_vector(
+    Ok(SimpleUndirectedGraphBuilder{}.from_vector(
         &v.into_iter().map(|(x, y)| (x as i64, y as i64)).collect(),
     ))
 }
