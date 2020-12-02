@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 extern crate nalgebra as na;
+use crate::dachshund::error::CLQResult;
 use crate::dachshund::graph_builder_base::GraphBuilderBase;
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::node::SimpleDirectedNode;
@@ -15,10 +16,11 @@ pub struct SimpleDirectedGraphBuilder {}
 
 impl GraphBuilderBase for SimpleDirectedGraphBuilder {
     type GraphType = SimpleDirectedGraph;
+    type RowType = (i64, i64);
 
     // builds a graph from a vector of IDs. Repeated edges are ignored.
     #[allow(clippy::ptr_arg)]
-    fn from_vector(&self, data: &Vec<(i64, i64)>) -> SimpleDirectedGraph {
+    fn from_vector(&self, data: &Vec<(i64, i64)>) -> CLQResult<SimpleDirectedGraph> {
         let mut ids: BTreeMap<NodeId, (BTreeSet<NodeId>, BTreeSet<NodeId>)> = BTreeMap::new();
         for (id1, id2) in data {
             ids.entry(NodeId::from(*id1))
@@ -41,9 +43,9 @@ impl GraphBuilderBase for SimpleDirectedGraphBuilder {
                 },
             );
         }
-        SimpleDirectedGraph {
+        Ok(SimpleDirectedGraph {
             ids: nodes.keys().cloned().collect(),
             nodes: nodes,
-        }
+        })
     }
 }

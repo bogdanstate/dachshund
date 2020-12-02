@@ -76,7 +76,7 @@ pub struct CNMCommunityIntermediaryState {
     pub num_edges: usize,
 }
 
-pub trait CNMCommunities : GraphBase<NodeType = SimpleNode> {
+pub trait CNMCommunities: GraphBase<NodeType = SimpleNode> {
     fn get_max_maxheap(
         &self,
         delta_q_maxheap: &HashMap<usize, CNMCommunityMergeInstructionHeap>,
@@ -91,9 +91,7 @@ pub trait CNMCommunities : GraphBase<NodeType = SimpleNode> {
         }
         maxh
     }
-    fn init_cnm_communities(
-        &self,
-    ) -> CNMCommunityIntermediaryState {
+    fn init_cnm_communities(&self) -> CNMCommunityIntermediaryState {
         // stores current communities
         let mut communities: HashMap<usize, Community> = HashMap::new();
         let mut degree_map: HashMap<usize, usize> = HashMap::new();
