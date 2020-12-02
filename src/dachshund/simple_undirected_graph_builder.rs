@@ -11,10 +11,12 @@ use crate::dachshund::node::SimpleNode;
 use crate::dachshund::simple_undirected_graph::SimpleUndirectedGraph;
 use itertools::Itertools;
 use rand::prelude::*;
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 pub struct SimpleUndirectedGraphBuilder {}
 
-pub trait TSimpleUndirectedGraphBuilder: GraphBuilderBase<RowType = (i64, i64)> {
+pub trait TSimpleUndirectedGraphBuilder: GraphBuilderBase<GraphType=SimpleUndirectedGraph, RowType = (i64, i64)> {
+
+
     // Build a graph with n vertices with every possible edge.
     fn get_complete_graph(&self, n: u64) -> CLQResult<Self::GraphType> {
         let mut v = Vec::new();
@@ -95,13 +97,11 @@ pub trait TSimpleUndirectedGraphBuilder: GraphBuilderBase<RowType = (i64, i64)> 
     }
 }
 
-impl GraphBuilderBase for SimpleUndirectedGraphBuilder {
+impl <T:TSimpleUndirectedGraphBuilder> GraphBuilderBase for T {
     type GraphType = SimpleUndirectedGraph;
     type RowType = (i64, i64);
-
     // builds a graph from a vector of IDs. Repeated edges are ignored.
     // Edges only need to be provided once (this being an undirected graph)
-    #[allow(clippy::ptr_arg)]
     fn from_vector(&self, data: &Vec<(i64, i64)>) -> CLQResult<SimpleUndirectedGraph> {
         let ids = Self::get_node_ids(data);
         let nodes = Self::get_nodes(ids);
@@ -116,36 +116,37 @@ impl TSimpleUndirectedGraphBuilder for SimpleUndirectedGraphBuilder {}
 pub struct SimpleUndirectedGraphBuilderWithCliques {
     cliques: Vec<BTreeSet<NodeId>>,
 }
-
 impl SimpleUndirectedGraphBuilderWithCliques {
     pub fn new(cliques: Vec<BTreeSet<NodeId>>) -> Self {
         Self { cliques }
     }
 }
 impl TSimpleUndirectedGraphBuilder for SimpleUndirectedGraphBuilderWithCliques {}
-impl GraphBuilderBase for SimpleUndirectedGraphBuilderWithCliques {
-    type GraphType = SimpleUndirectedGraph;
-    type RowType = (i64, i64);
 
-    // builds a graph from a vector of IDs. Repeated edges are ignored.
-    // Edges only need to be provided once (this being an undirected graph)
-    #[allow(clippy::ptr_arg)]
-    fn from_vector(&self, data: &Vec<(i64, i64)>) -> CLQResult<SimpleUndirectedGraph> {
-        let ids = Self::get_node_ids(data);
-        let mut nodes = Self::get_nodes(ids);
+trait GraphBuilderBaseWithCliques: GraphBuilderBase {
+
+    fn get_clique_edges(&self, id1: NodeId, id2: NodeId) -> Vec<<Self as GraphBuilderBase>::RowType>;
+    fn from_vector_with_cliques(&self, data: Vec<<Self as GraphBuilderBase>::RowType>) -> CLQResult<<Self as GraphBuilderBase>::GraphType> {
+
+        let row_set: HashSet<<Self as GraphBuilderBase>::RowType> = data.into_iter().collect();
+
         for clique in &self.cliques {
             for comb in clique.iter().combinations(2) {
                 let id1 = comb.get(0).unwrap().clone();
                 let id2 = comb.get(1).unwrap().clone();
-                let node = nodes.get_mut(id1).unwrap();
-                node.neighbors.insert(*id2);
-                let node = nodes.get_mut(id2).unwrap();
-                node.neighbors.insert(*id1);
+                for clique_edge in self.get_clique_edges().into_iter() {
+                    row_set.insert(clique_edge)
+                }
             }
         }
-        Ok(SimpleUndirectedGraph {
-            ids: nodes.keys().cloned().collect(),
-            nodes,
-        })
+        let rows_with_cliques: Vec<_> = row_set.into_iter().collect();
+        self.from_vector(&rows_with_cliques)
+
+    }
+}
+
+impl GraphBuilderBaseWithCliques for SimpleUndirectedGraphBuilderWithCliques {
+    fn get_clique_edges(&self, id1: NodeId, id2: NodeId) -> Vec<(i64, i64)> {
+        vec![(id1.value(), id2.value())]
     }
 }
