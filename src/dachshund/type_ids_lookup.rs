@@ -10,11 +10,11 @@ use std::collections::HashMap;
 
 /// A mapping from opaque strings identifying node types (e.g. "author"), to the associated integer
 /// identifier used internally. Encapsulates some special/convenient accessor/mutator logic.
-pub struct NonCoreTypeIds {
+pub struct TypeIdsLookup {
     data: HashMap<String, NodeTypeId>,
 }
 
-impl NonCoreTypeIds {
+impl TypeIdsLookup {
     pub fn new() -> Self {
         Self {
             data: HashMap::new(),
@@ -51,7 +51,7 @@ impl NonCoreTypeIds {
         })
     }
 }
-impl Default for NonCoreTypeIds {
+impl Default for TypeIdsLookup {
     fn default() -> Self {
         Self::new()
     }

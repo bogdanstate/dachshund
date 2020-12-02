@@ -15,10 +15,10 @@ use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::graph_builder_base::GraphBuilderBase;
 use crate::dachshund::id_types::{GraphId, NodeTypeId};
 use crate::dachshund::line_processor::LineProcessorBase;
-use crate::dachshund::non_core_type_ids::NonCoreTypeIds;
 use crate::dachshund::row::{CliqueRow, EdgeRow, Row};
 use crate::dachshund::search_problem::SearchProblem;
 use crate::dachshund::transformer_base::TransformerBase;
+use crate::dachshund::type_ids_lookup::TypeIdsLookup;
 use crate::dachshund::typed_graph::TypedGraph;
 use crate::dachshund::typed_graph_builder::TypedGraphBuilder;
 use crate::dachshund::typed_graph_line_processor::TypedGraphLineProcessor;
@@ -29,7 +29,7 @@ use std::sync::Arc;
 /// Used to set up the typed graph clique mining algorithm.
 pub struct Transformer {
     pub core_type: String,
-    pub non_core_type_ids: Rc<NonCoreTypeIds>,
+    pub type_ids_lookup: Rc<TypeIdsLookup>,
     pub non_core_types: Rc<Vec<String>>,
     pub edge_types: Rc<Vec<String>>,
     pub num_non_core_types: usize,
@@ -83,28 +83,28 @@ impl Transformer {
     /// This sets up the semantics related to the set of relations contained in the
     /// typed graph. A requirement is that all relations share a "core" type, in this
     /// case, "author". Non-core types must be listed in a vector, which is used to
-    /// index the non core-types. The function creates a vector of NonCoreTypeIds, which
+    /// index the non core-types. The function creates a vector of TypeIdsLookup, which
     /// will then be used to process input rows.
     pub fn process_typespec(
         typespec: Vec<Vec<String>>,
         core_type: &str,
         non_core_types: Vec<String>,
-    ) -> CLQResult<NonCoreTypeIds> {
-        let mut non_core_type_ids = NonCoreTypeIds::new();
-        non_core_type_ids.insert(core_type, NodeTypeId::from(0 as usize));
+    ) -> CLQResult<TypeIdsLookup> {
+        let mut type_ids_lookup = TypeIdsLookup::new();
+        type_ids_lookup.insert(core_type, NodeTypeId::from(0 as usize));
 
         let should_be_only_this_core_type = &typespec[0][0].clone();
         for (non_core_type_ix, non_core_type) in non_core_types.iter().enumerate() {
-            non_core_type_ids.insert(&non_core_type, NodeTypeId::from(non_core_type_ix + 1));
+            type_ids_lookup.insert(&non_core_type, NodeTypeId::from(non_core_type_ix + 1));
         }
         for item in typespec {
             let core_type = &item[0];
             let non_core_type = &item[2];
             assert_eq!(core_type, should_be_only_this_core_type);
-            let non_core_type_id: &mut NodeTypeId = non_core_type_ids.require_mut(non_core_type)?;
+            let non_core_type_id: &mut NodeTypeId = type_ids_lookup.require_mut(non_core_type)?;
             non_core_type_id.increment_possible_edge_count();
         }
-        Ok(non_core_type_ids)
+        Ok(type_ids_lookup)
     }
     /// Called by main.rs module to set up the beam search. Parameters are as follows:
     ///     - `typespec`: a command-line argument, of the form:
@@ -166,20 +166,20 @@ impl Transformer {
         let non_core_types = Rc::new(non_core_types_v);
 
         let num_non_core_types: usize = non_core_types.len();
-        let non_core_type_ids: Rc<NonCoreTypeIds> = Rc::new(Transformer::process_typespec(
+        let type_ids_lookup: Rc<TypeIdsLookup> = Rc::new(Transformer::process_typespec(
             typespec,
             &core_type,
             non_core_types.to_vec(),
         )?);
         let line_processor = Arc::new(TypedGraphLineProcessor::new(
             core_type.clone(),
-            non_core_type_ids.clone(),
+            type_ids_lookup.clone(),
             non_core_types.clone(),
             edge_types.clone(),
         ));
         let transformer = Self {
             core_type,
-            non_core_type_ids,
+            type_ids_lookup,
             non_core_types,
             edge_types,
             num_non_core_types,
