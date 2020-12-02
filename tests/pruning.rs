@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 extern crate lib_dachshund;
+use crate::lib_dachshund::dachshund::typed_graph_builder::TypedGraphBuilderBase;
 use lib_dachshund::dachshund::candidate::Candidate;
 use lib_dachshund::dachshund::error::{CLQError, CLQResult};
 use lib_dachshund::dachshund::id_types::{GraphId, NodeId};
@@ -16,7 +17,6 @@ use lib_dachshund::dachshund::typed_graph::TypedGraph;
 use lib_dachshund::dachshund::typed_graph_builder::TypedGraphBuilder;
 use std::collections::HashSet;
 use std::sync::mpsc::channel;
-use crate::lib_dachshund::dachshund::typed_graph_builder::TypedGraphBuilderBase;
 
 pub fn gen_test_typespec() -> Vec<Vec<String>> {
     return vec![

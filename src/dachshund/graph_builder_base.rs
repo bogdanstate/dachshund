@@ -8,8 +8,10 @@ use crate::dachshund::error::CLQResult;
 use crate::dachshund::graph_base::GraphBase;
 
 pub trait GraphBuilderBaseWithPreProcessing: GraphBuilderBase {
-    fn pre_process_rows(&self, data: Vec<<Self as GraphBuilderBase>::RowType>) ->
-    CLQResult<Vec<<Self as GraphBuilderBase>::RowType>> {
+    fn pre_process_rows(
+        &self,
+        data: Vec<<Self as GraphBuilderBase>::RowType>,
+    ) -> CLQResult<Vec<<Self as GraphBuilderBase>::RowType>> {
         Ok(data)
     }
 }
