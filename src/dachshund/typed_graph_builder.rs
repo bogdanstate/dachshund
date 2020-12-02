@@ -10,7 +10,7 @@ use crate::dachshund::node::NodeBase;
 use crate::dachshund::typed_graph::TypedGraph;
 
 use crate::dachshund::error::{CLQError, CLQResult};
-use crate::dachshund::id_types::{GraphId, NodeTypeId, NodeId};
+use crate::dachshund::id_types::{GraphId, NodeId, NodeTypeId};
 use crate::dachshund::node::{Node, NodeEdge};
 use crate::dachshund::row::EdgeRow;
 use std::collections::{HashMap, HashSet};
@@ -20,12 +20,10 @@ pub struct TypedGraphBuilder {
     pub graph_id: GraphId,
 }
 impl GraphBuilderBase for TypedGraphBuilder {
-
     type GraphType = TypedGraph;
     type RowType = EdgeRow;
 
     fn from_vector(&self, data: &Vec<EdgeRow>) -> CLQResult<TypedGraph> {
-
         let mut source_ids: HashSet<NodeId> = HashSet::new();
         let mut target_ids: HashSet<NodeId> = HashSet::new();
         let mut target_type_ids: HashMap<NodeId, NodeTypeId> = HashMap::new();
@@ -182,13 +180,20 @@ impl TypedGraphBuilder {
     /// new graph, where all nodes are assured to have degree at least min_degree.
     /// The provision of a TypedGraph is necessary, since the notion of "degree" does
     /// not make sense outside of a graph.
-    pub fn prune(graph: TypedGraph, rows: &Vec<EdgeRow>, min_degree: usize) -> CLQResult<TypedGraph> {
+    pub fn prune(
+        graph: TypedGraph,
+        rows: &Vec<EdgeRow>,
+        min_degree: usize,
+    ) -> CLQResult<TypedGraph> {
         let mut target_type_ids: HashMap<NodeId, NodeTypeId> = HashMap::new();
         for r in rows.iter() {
             target_type_ids.insert(r.target_id, r.target_type_id);
         }
-        let (filtered_source_ids, filtered_target_ids, filtered_rows): (Vec<NodeId>, Vec<NodeId>, Vec<EdgeRow>) =
-            Self::get_filtered_sources_targets_rows(graph, min_degree, rows);
+        let (filtered_source_ids, filtered_target_ids, filtered_rows): (
+            Vec<NodeId>,
+            Vec<NodeId>,
+            Vec<EdgeRow>,
+        ) = Self::get_filtered_sources_targets_rows(graph, min_degree, rows);
         let mut filtered_node_map: HashMap<NodeId, Node> =
             Self::init_nodes(&filtered_source_ids, &filtered_target_ids, &target_type_ids);
         Self::populate_edges(&filtered_rows, &mut filtered_node_map)?;
