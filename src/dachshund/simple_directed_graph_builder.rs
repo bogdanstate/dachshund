@@ -20,7 +20,7 @@ impl GraphBuilderBase for SimpleDirectedGraphBuilder {
 
     // builds a graph from a vector of IDs. Repeated edges are ignored.
     #[allow(clippy::ptr_arg)]
-    fn from_vector(&self, data: Vec<(i64, i64)>) -> CLQResult<SimpleDirectedGraph> {
+    fn from_vector(&mut self, data: Vec<(i64, i64)>) -> CLQResult<SimpleDirectedGraph> {
         let mut ids: BTreeMap<NodeId, (BTreeSet<NodeId>, BTreeSet<NodeId>)> = BTreeMap::new();
         for (id1, id2) in data {
             ids.entry(NodeId::from(id1))

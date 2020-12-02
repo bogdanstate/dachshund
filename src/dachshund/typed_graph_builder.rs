@@ -5,15 +5,17 @@
  * LICENSE file in the root directory of this source tree.
  */
 use crate::dachshund::graph_base::GraphBase;
-use crate::dachshund::graph_builder_base::GraphBuilderBase;
+use crate::dachshund::graph_builder_base::{
+    GraphBuilderBase, GraphBuilderBaseWithCliques, GraphBuilderBaseWithPreProcessing,
+};
 use crate::dachshund::node::NodeBase;
 use crate::dachshund::typed_graph::TypedGraph;
 
 use crate::dachshund::error::{CLQError, CLQResult};
-use crate::dachshund::id_types::{GraphId, NodeId, NodeTypeId};
+use crate::dachshund::id_types::{EdgeTypeId, GraphId, NodeId, NodeTypeId};
 use crate::dachshund::node::{Node, NodeEdge};
 use crate::dachshund::row::EdgeRow;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 pub struct TypedGraphBuilder {
     pub min_degree: Option<usize>,
@@ -23,7 +25,7 @@ impl GraphBuilderBase for TypedGraphBuilder {
     type GraphType = TypedGraph;
     type RowType = EdgeRow;
 
-    fn from_vector(&self, data: Vec<EdgeRow>) -> CLQResult<TypedGraph> {
+    fn from_vector(&mut self, data: Vec<EdgeRow>) -> CLQResult<TypedGraph> {
         let mut source_ids: HashSet<NodeId> = HashSet::new();
         let mut target_ids: HashSet<NodeId> = HashSet::new();
         let mut target_type_ids: HashMap<NodeId, NodeTypeId> = HashMap::new();
@@ -228,3 +230,95 @@ pub trait TypedGraphBuilderBase {
     }
 }
 impl TypedGraphBuilderBase for TypedGraphBuilder {}
+
+pub struct TypedGraphBuilderWithCliques {
+    pub graph_id: GraphId,
+    pub cliques: Vec<(BTreeSet<NodeId>, BTreeSet<NodeId>)>,
+    pub core_type_id: NodeTypeId,
+    pub non_core_type_map: HashMap<NodeId, (NodeTypeId, EdgeTypeId)>,
+}
+impl TypedGraphBuilderBase for TypedGraphBuilderWithCliques {}
+impl GraphBuilderBase for TypedGraphBuilderWithCliques {
+    type GraphType = TypedGraph;
+    type RowType = EdgeRow;
+
+    fn from_vector(&mut self, data: Vec<EdgeRow>) -> CLQResult<TypedGraph> {
+        let mut source_ids: HashSet<NodeId> = HashSet::new();
+        let mut target_ids: HashSet<NodeId> = HashSet::new();
+        let mut target_type_ids: HashMap<NodeId, NodeTypeId> = HashMap::new();
+        for r in data.iter() {
+            assert!(self.graph_id == r.graph_id);
+            source_ids.insert(r.source_id);
+            target_ids.insert(r.target_id);
+            target_type_ids.insert(r.target_id, r.target_type_id);
+        }
+
+        // warrant a canonical order on the id vectors
+        let mut source_ids_vec: Vec<NodeId> = source_ids.into_iter().collect();
+        source_ids_vec.sort();
+        let mut target_ids_vec: Vec<NodeId> = target_ids.into_iter().collect();
+        target_ids_vec.sort();
+
+        let mut node_map: HashMap<NodeId, Node> =
+            Self::init_nodes(&source_ids_vec, &target_ids_vec, &target_type_ids);
+        Self::populate_edges(&data, &mut node_map)?;
+        let graph = Self::create_graph(node_map, source_ids_vec, target_ids_vec)?;
+        Ok(graph)
+    }
+}
+
+// TODO: should be unified with SimpleUndirectedGraphBuilderWithCliques
+impl GraphBuilderBaseWithPreProcessing for TypedGraphBuilderWithCliques {
+    fn pre_process_rows(
+        &mut self,
+        data: Vec<<Self as GraphBuilderBase>::RowType>,
+    ) -> CLQResult<Vec<<Self as GraphBuilderBase>::RowType>> {
+        let mut row_set: HashSet<<Self as GraphBuilderBase>::RowType> = HashSet::new();
+        for el in data.into_iter() {
+            let target_type = el.target_type_id.clone();
+            let edge_type = el.edge_type_id.clone();
+            self.non_core_type_map
+                .insert(el.source_id.clone(), (target_type, edge_type));
+            row_set.insert(el);
+        }
+
+        for (core, non_core) in self.get_cliques() {
+            for core_id in core {
+                for non_core_id in non_core {
+                    for clique_edge in self
+                        .get_clique_edges(*core_id, *non_core_id)
+                        .unwrap()
+                        .into_iter()
+                    {
+                        row_set.insert(clique_edge);
+                    }
+                }
+            }
+        }
+        let rows_with_cliques: Vec<_> = row_set.into_iter().collect();
+        self.non_core_type_map.clear();
+        Ok(rows_with_cliques)
+    }
+}
+impl GraphBuilderBaseWithCliques for TypedGraphBuilderWithCliques {
+    type CliquesType = (BTreeSet<NodeId>, BTreeSet<NodeId>);
+
+    fn get_clique_edges(&self, id1: NodeId, id2: NodeId) -> CLQResult<Vec<EdgeRow>> {
+        let (target_type_id, edge_type_id) = self
+            .non_core_type_map
+            .get(&id2)
+            .ok_or_else(CLQError::err_none)?
+            .clone();
+        Ok(vec![EdgeRow {
+            graph_id: self.graph_id.clone(),
+            source_id: id1,
+            target_id: id2,
+            source_type_id: self.core_type_id.clone(),
+            target_type_id,
+            edge_type_id,
+        }])
+    }
+    fn get_cliques(&self) -> &Vec<(BTreeSet<NodeId>, BTreeSet<NodeId>)> {
+        &self.cliques
+    }
+}
