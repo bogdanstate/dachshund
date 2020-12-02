@@ -73,6 +73,9 @@ impl TypedGraphSchema {
     pub fn get_num_non_core_types(&self) -> usize {
         self.num_non_core_types
     }
+    pub fn get_num_edge_types(&self) -> usize {
+        self.edge_type_lookup.len()
+    }
     pub fn get_node_type_id(&self, node_type: String) -> CLQResult<&NodeTypeId> {
         self.node_type_lookup.require(&node_type)
     }
@@ -81,5 +84,8 @@ impl TypedGraphSchema {
     }
     pub fn get_core_type_id(&self) -> CLQResult<&NodeTypeId> {
         self.get_node_type_id(self.core_type.clone())
+    }
+    pub fn get_node_type_name(&self, non_core_type_id: &NodeTypeId) -> Option<String> {
+        self.node_type_lookup.type_name(non_core_type_id)
     }
 }

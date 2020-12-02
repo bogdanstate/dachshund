@@ -42,8 +42,8 @@ fn test_init_beam_with_clique_rows() -> CLQResult<()> {
     let graph_id: GraphId = 0.into();
     let transformer: Transformer = gen_test_transformer(typespec, "author".to_string())?;
     let rows: Vec<EdgeRow> = process_raw_vector(&transformer, raw)?;
-    let target_type_ids = &transformer.type_ids_lookup.0;
-    let article_type: NodeTypeId = *target_type_ids.require("article")?;
+    let article_type: NodeTypeId =
+    *transformer.schema.get_node_type_id("article".to_string())?;
     assert_eq!(article_type.value(), 1);
     let clique_rows: Vec<CliqueRow> = vec![
         CliqueRow::new(graph_id, 1, None),
@@ -60,7 +60,7 @@ fn test_init_beam_with_clique_rows() -> CLQResult<()> {
         &graph,
         &clique_rows,
         false,
-        &target_types,
+        target_types,
         1,
         transformer.search_problem.clone(),
         graph_id,
@@ -89,8 +89,7 @@ fn test_init_beam_with_partially_overlapping_clique_rows() -> CLQResult<()> {
 
     let transformer: Transformer = gen_test_transformer(typespec, "author".to_string())?;
     let rows: Vec<EdgeRow> = process_raw_vector(&transformer, raw)?;
-    let target_type_ids = &transformer.type_ids_lookup.0;
-    let article_type: NodeTypeId = *target_type_ids.require("article")?;
+    let article_type: NodeTypeId = *transformer.schema.get_node_type_id("article".to_string())?;
     let clique_rows: Vec<CliqueRow> = vec![
         CliqueRow::new(graph_id, 1, None),
         CliqueRow::new(graph_id, 8, None),
@@ -103,7 +102,7 @@ fn test_init_beam_with_partially_overlapping_clique_rows() -> CLQResult<()> {
         &graph,
         &clique_rows,
         false,
-        &target_types,
+        target_types,
         1,
         transformer.search_problem.clone(),
         graph_id,

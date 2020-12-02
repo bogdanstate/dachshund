@@ -42,3 +42,4 @@ pub mod type_ids_lookup;
 pub mod typed_graph;
 pub mod typed_graph_builder;
 pub mod typed_graph_line_processor;
+pub mod typed_graph_schema;

@@ -51,3 +51,4 @@ pub use dachshund::transitivity::Transitivity;
 pub use dachshund::typed_graph::TypedGraph;
 pub use dachshund::typed_graph_builder::TypedGraphBuilder;
 pub use dachshund::typed_graph_line_processor::TypedGraphLineProcessor;
+pub use dachshund::typed_graph_schema::TypedGraphSchema;

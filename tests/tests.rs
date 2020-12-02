@@ -18,6 +18,7 @@ use lib_dachshund::dachshund::test_utils::{
 use lib_dachshund::dachshund::transformer::Transformer;
 use lib_dachshund::dachshund::typed_graph::TypedGraph;
 use lib_dachshund::dachshund::typed_graph_line_processor::TypedGraphLineProcessor;
+use lib_dachshund::dachshund::typed_graph_schema::TypedGraphSchema;
 use std::rc::Rc;
 use std::sync::mpsc::channel;
 
@@ -42,23 +43,18 @@ fn test_process_typespec() -> CLQResult<()> {
         ],
         vec!["author".to_string(), "attended".into(), "conference".into()],
     ];
-    let target_types = vec!["conference".to_string(), "journal".into()];
     let core_type: String = "author".to_string();
-    let target_type_ids = Transformer::process_typespec(ts, &core_type, target_types)?;
-    assert_eq!(target_type_ids.0.require("conference")?.value(), 1);
-    assert_eq!(target_type_ids.0.require("journal")?.value(), 2);
+    let schema = Rc::new(TypedGraphSchema::new(ts, core_type.to_string())?);
+    assert_eq!(schema.get_node_type_id("conference".to_string())?.value(), 1);
+    assert_eq!(schema.get_node_type_id("journal".to_string())?.value(), 2);
     assert_eq!(
-        target_type_ids
-            .0
-            .require("conference")?
+        schema.get_node_type_id("conference".to_string())?
             .max_edge_count_with_core_node()
             .unwrap(),
         3
     );
     assert_eq!(
-        target_type_ids
-            .0
-            .require("journal")?
+        schema.get_node_type_id("journal".to_string())?
             .max_edge_count_with_core_node()
             .unwrap(),
         1
@@ -82,7 +78,7 @@ fn test_process_single_line() -> CLQResult<()> {
     assert_eq!(row.source_id, NodeId::from(1));
     assert_eq!(row.target_id, NodeId::from(2));
     let target_type_name: Option<String> =
-        transformer.type_ids_lookup.0.type_name(&row.target_type_id);
+        transformer.schema.get_node_type_name(&row.target_type_id);
     assert_eq!(target_type_name, Some("journal".to_owned()));
     Ok(())
 }
@@ -100,10 +96,8 @@ fn test_process_single_line_clique_row() -> CLQResult<()> {
         .unwrap();
     assert_eq!(row.graph_id.value(), 0);
     assert_eq!(row.node_id, NodeId::from(2));
-    let target_type_name: Option<String> = transformer
-        .type_ids_lookup
-        .0
-        .type_name(&row.target_type.unwrap());
+    let target_type_name: Option<String> =
+        transformer.schema.get_node_type_name(&row.target_type.unwrap());
     assert_eq!(target_type_name, Some("journal".to_owned()));
     let raw: String = "0\t1\tauthor\t\t\t".to_string();
     let row: CliqueRow = transformer
@@ -314,19 +308,10 @@ fn test_typespec() -> CLQResult<()> {
         vec!["author".to_string(), "cited".into(), "article".into()],
         vec!["author".to_string(), "published".into(), "book".into()],
     ];
-    let (node_type_lookup, edge_type_lookup) = Transformer::process_typespec(
-        typespec,
-        "author",
-        vec!["article".to_string(), "book".into()],
-    )?;
-    assert_eq!(node_type_lookup.len(), 3);
-    assert_eq!(edge_type_lookup.len(), 2);
-    let line_processor = TypedGraphLineProcessor::new(
-        "author".to_string(),
-        Rc::new((node_type_lookup, edge_type_lookup)),
-        Rc::new(vec!["article".to_string(), "book".into()]),
-        Rc::new(vec!["published".to_string(), "cited".into()]),
-    );
+    let schema = Rc::new(TypedGraphSchema::new(typespec, "author".to_string())?);
+    assert_eq!(schema.get_num_non_core_types(), 2);
+    assert_eq!(schema.get_num_edge_types(), 2);
+    let line_processor = TypedGraphLineProcessor::new(schema);
     let raw: String = "0\t1\t2\tauthor\tpublished\tarticle".to_string();
     let row = line_processor
         .process_line(raw)?
@@ -340,7 +325,7 @@ fn test_typespec() -> CLQResult<()> {
         row.target_type_id,
         NodeTypeId::new(1 as usize, false, Some(2 as usize))
     );
-    assert_eq!(row.edge_type_id, EdgeTypeId::from(0 as usize));
+    assert_eq!(row.edge_type_id, EdgeTypeId::from(1 as usize));
 
     Ok(())
 }

@@ -13,32 +13,26 @@ use crate::dachshund::beam::{Beam, BeamSearchResult};
 use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::graph_builder_base::GraphBuilderBase;
-use crate::dachshund::id_types::{EdgeTypeId, GraphId, NodeTypeId};
+use crate::dachshund::id_types::GraphId;
 use crate::dachshund::line_processor::LineProcessorBase;
 use crate::dachshund::row::{CliqueRow, EdgeRow, Row};
 use crate::dachshund::search_problem::SearchProblem;
 use crate::dachshund::transformer_base::TransformerBase;
-use crate::dachshund::type_ids_lookup::TypeIdsLookup;
 use crate::dachshund::typed_graph::TypedGraph;
 use crate::dachshund::typed_graph_builder::TypedGraphBuilder;
 use crate::dachshund::typed_graph_line_processor::TypedGraphLineProcessor;
-use std::collections::BTreeSet;
+use crate::dachshund::typed_graph_schema::TypedGraphSchema;
 use std::rc::Rc;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
 
 /// Used to set up the typed graph clique mining algorithm.
 pub struct Transformer {
-    pub core_type: String,
-    pub type_ids_lookup: Rc<(TypeIdsLookup<NodeTypeId>, TypeIdsLookup<EdgeTypeId>)>,
-    pub target_types: Rc<Vec<String>>,
-    pub edge_types: Rc<Vec<String>>,
-    pub num_non_core_types: usize,
+    pub schema: Rc<TypedGraphSchema>,
     pub line_processor: Arc<TypedGraphLineProcessor>,
     pub search_problem: Rc<SearchProblem>,
     pub debug: bool,
     pub long_format: bool,
-
     edge_rows: Vec<EdgeRow>,
     clique_rows: Vec<CliqueRow>,
 }
@@ -79,42 +73,6 @@ impl TransformerBase for Transformer {
     }
 }
 impl Transformer {
-    /// processes a "typespec", a command-line argument, of the form:
-    /// [["author", "published_in", "journal"], ["author", "co-authored", "article"]].
-    /// This sets up the semantics related to the set of relations contained in the
-    /// typed graph. A requirement is that all relations share a "core" type, in this
-    /// case, "author". Non-core types must be listed in a vector, which is used to
-    /// index the non core-types. The function creates a vector of TypeIdsLookup, which
-    /// will then be used to process input rows.
-    pub fn process_typespec(
-        typespec: Vec<Vec<String>>,
-        core_type: &str,
-        non_core_types: Vec<String>,
-    ) -> CLQResult<(TypeIdsLookup<NodeTypeId>, TypeIdsLookup<EdgeTypeId>)> {
-        let mut target_type_ids_lookup = TypeIdsLookup::<NodeTypeId>::new();
-        target_type_ids_lookup.insert(core_type, NodeTypeId::from(0 as usize));
-
-        let should_be_only_this_core_type = &typespec[0][0].clone();
-        for (non_core_type_ix, non_core_type) in non_core_types.iter().enumerate() {
-            target_type_ids_lookup.insert(&non_core_type, NodeTypeId::from(non_core_type_ix + 1));
-        }
-        let mut edge_types: BTreeSet<String> = BTreeSet::new();
-        for item in typespec {
-            let core_type = &item[0];
-            let edge_type = &item[1];
-            let target_type = &item[2];
-            assert_eq!(core_type, should_be_only_this_core_type);
-            let target_type_id: &mut NodeTypeId =
-                target_type_ids_lookup.require_mut(target_type)?;
-            target_type_id.increment_possible_edge_count();
-            edge_types.insert(edge_type.to_string());
-        }
-        let mut edge_type_ids_lookup = TypeIdsLookup::new();
-        for (i, edge_type) in edge_types.iter().enumerate() {
-            edge_type_ids_lookup.insert(&edge_type, EdgeTypeId::from(i));
-        }
-        Ok((target_type_ids_lookup, edge_type_ids_lookup))
-    }
     /// Called by main.rs module to set up the beam search. Parameters are as follows:
     ///     - `typespec`: a command-line argument, of the form:
     ///     [["author", "published_in", "journal"], ["author", "co-authored", "article"]].
@@ -166,32 +124,11 @@ impl Transformer {
             max_repeated_prior_scores,
             min_degree,
         ));
-        let mut edge_types_v: Vec<String> = typespec.iter().map(|x| x[1].clone()).collect();
-        edge_types_v.sort();
-        let edge_types = Rc::new(edge_types_v);
 
-        let mut non_core_types_v: Vec<String> = typespec.iter().map(|x| x[2].clone()).collect();
-        non_core_types_v.sort();
-        let non_core_types = Rc::new(non_core_types_v);
-
-        let num_non_core_types: usize = non_core_types.len();
-        let type_ids_lookup = Rc::new(Transformer::process_typespec(
-            typespec,
-            &core_type,
-            non_core_types.to_vec(),
-        )?);
-        let line_processor = Arc::new(TypedGraphLineProcessor::new(
-            core_type.clone(),
-            type_ids_lookup.clone(),
-            non_core_types.clone(),
-            edge_types.clone(),
-        ));
+        let schema = Rc::new(TypedGraphSchema::new(typespec, core_type)?);
+        let line_processor = Arc::new(TypedGraphLineProcessor::new(schema.clone()));
         let transformer = Self {
-            core_type,
-            type_ids_lookup,
-            target_types: non_core_types,
-            edge_types,
-            num_non_core_types,
+            schema,
             line_processor,
             search_problem,
             debug,
@@ -268,8 +205,8 @@ impl Transformer {
             graph,
             clique_rows,
             verbose,
-            &self.target_types,
-            self.num_non_core_types,
+            self.schema.get_non_core_types(),
+            self.schema.get_num_non_core_types(),
             self.search_problem.clone(),
             graph_id,
         )?;
@@ -301,14 +238,16 @@ impl Transformer {
                 let line: String = format!(
                     "{}\t{}",
                     graph_id.value(),
-                    result.top_candidate.to_printable_row(&self.target_types)?,
+                    result
+                        .top_candidate
+                        .to_printable_row(&self.schema.get_non_core_types())?,
                 );
                 output.send((Some(line), false)).unwrap();
             } else {
                 result.top_candidate.print(
                     graph_id,
-                    &self.target_types,
-                    &self.core_type,
+                    &self.schema.get_non_core_types(),
+                    &self.schema.get_core_type(),
                     output,
                 )?;
             }
