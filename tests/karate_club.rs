@@ -127,8 +127,7 @@ where
     let mut rows = get_karate_club_edges();
     rows.push((35, 36));
     builder.from_vector(
-        rows
-            .into_iter()
+        rows.into_iter()
             .map(|(x, y)| (x as i64, y as i64))
             .collect(),
     )
@@ -157,8 +156,7 @@ where
 {
     let rows = get_two_karate_clubs_edges();
     builder.from_vector(
-        rows
-            .into_iter()
+        rows.into_iter()
             .map(|(x, y)| (x as i64, y as i64))
             .collect(),
     )
@@ -171,8 +169,7 @@ fn get_directed_karate_club_graph_both_ways() -> CLQResult<SimpleDirectedGraph> 
     let rows = get_karate_club_edges();
     let builder = SimpleDirectedGraphBuilder {};
     let graph = builder.from_vector(
-        rows
-            .iter()
+        rows.iter()
             .cloned()
             .map(|(x, y)| (x as i64, y as i64))
             .chain(rows.iter().cloned().map(|(x, y)| (y as i64, x as i64)))
@@ -189,8 +186,7 @@ fn get_directed_karate_club_graph_with_core(
     let rows = get_karate_club_edges();
     let builder = SimpleDirectedGraphBuilder {};
     let graph = builder.from_vector(
-        rows
-            .iter()
+        rows.iter()
             .cloned()
             .map(|(x, y)| (x as i64, y as i64))
             .chain(
@@ -212,8 +208,7 @@ where
     let mut rows = get_two_karate_clubs_edges();
     rows.push((34, 35));
     builder.from_vector(
-        rows
-            .into_iter()
+        rows.into_iter()
             .map(|(x, y)| (x as i64, y as i64))
             .collect(),
     )
@@ -230,8 +225,7 @@ where
 {
     let rows = get_karate_club_edges();
     builder.from_vector(
-        rows
-            .into_iter()
+        rows.into_iter()
             .map(|(x, y)| (x as i64, y as i64))
             .collect(),
     )
