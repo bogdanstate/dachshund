@@ -29,8 +29,8 @@ use std::sync::Arc;
 /// Used to set up the typed graph clique mining algorithm.
 pub struct Transformer {
     pub core_type: String,
-    pub type_ids_lookup: Rc<TypeIdsLookup>,
-    pub non_core_types: Rc<Vec<String>>,
+    pub target_type_ids_lookup: Rc<TypeIdsLookup>,
+    pub target_types: Rc<Vec<String>>,
     pub edge_types: Rc<Vec<String>>,
     pub num_non_core_types: usize,
     pub line_processor: Arc<TypedGraphLineProcessor>,
@@ -166,21 +166,21 @@ impl Transformer {
         let non_core_types = Rc::new(non_core_types_v);
 
         let num_non_core_types: usize = non_core_types.len();
-        let type_ids_lookup: Rc<TypeIdsLookup> = Rc::new(Transformer::process_typespec(
+        let target_type_ids_lookup: Rc<TypeIdsLookup> = Rc::new(Transformer::process_typespec(
             typespec,
             &core_type,
             non_core_types.to_vec(),
         )?);
         let line_processor = Arc::new(TypedGraphLineProcessor::new(
             core_type.clone(),
-            type_ids_lookup.clone(),
+            target_type_ids_lookup.clone(),
             non_core_types.clone(),
             edge_types.clone(),
         ));
         let transformer = Self {
             core_type,
-            type_ids_lookup,
-            non_core_types,
+            target_type_ids_lookup,
+            target_types: non_core_types,
             edge_types,
             num_non_core_types,
             line_processor,
@@ -259,7 +259,7 @@ impl Transformer {
             graph,
             clique_rows,
             verbose,
-            &self.non_core_types,
+            &self.target_types,
             self.num_non_core_types,
             self.search_problem.clone(),
             graph_id,
@@ -294,13 +294,13 @@ impl Transformer {
                     graph_id.value(),
                     result
                         .top_candidate
-                        .to_printable_row(&self.non_core_types)?,
+                        .to_printable_row(&self.target_types)?,
                 );
                 output.send((Some(line), false)).unwrap();
             } else {
                 result.top_candidate.print(
                     graph_id,
-                    &self.non_core_types,
+                    &self.target_types,
                     &self.core_type,
                     output,
                 )?;

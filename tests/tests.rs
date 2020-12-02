@@ -78,7 +78,7 @@ fn test_process_single_line() -> CLQResult<()> {
     assert_eq!(row.source_id, NodeId::from(1));
     assert_eq!(row.target_id, NodeId::from(2));
     let target_type_name: Option<String> =
-        transformer.type_ids_lookup.type_name(&row.target_type_id);
+        transformer.target_type_ids_lookup.type_name(&row.target_type_id);
     assert_eq!(target_type_name, Some("journal".to_owned()));
     Ok(())
 }
@@ -97,7 +97,7 @@ fn test_process_single_line_clique_row() -> CLQResult<()> {
     assert_eq!(row.graph_id.value(), 0);
     assert_eq!(row.node_id, NodeId::from(2));
     let target_type_name: Option<String> = transformer
-        .type_ids_lookup
+        .target_type_ids_lookup
         .type_name(&row.target_type.unwrap());
     assert_eq!(target_type_name, Some("journal".to_owned()));
     let raw: String = "0\t1\tauthor\t\t\t".to_string();
