@@ -238,6 +238,21 @@ pub struct TypedGraphBuilderWithCliques {
     pub non_core_type_map: HashMap<NodeId, NodeTypeId>,
     pub edge_type_map: HashMap<(NodeTypeId, NodeTypeId), Vec<EdgeTypeId>>,
 }
+impl TypedGraphBuilderWithCliques {
+    fn new(
+        graph_id: GraphId,
+        cliques: Vec<(BTreeSet<NodeId>, BTreeSet<NodeId>)>,
+        core_type_id: NodeTypeId,
+    ) -> Self {
+        Self {
+            graph_id,
+            cliques,
+            core_type_id,
+            non_core_type_map: HashMap::new(),
+            edge_type_map: HashMap::new(),
+        }
+    }
+}
 impl TypedGraphBuilderBase for TypedGraphBuilderWithCliques {}
 impl GraphBuilderBase for TypedGraphBuilderWithCliques {
     type GraphType = TypedGraph;

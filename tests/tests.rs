@@ -304,3 +304,20 @@ fn test_process_another_small_clique_with_two_kinds_of_rows() -> CLQResult<()> {
         },
     )
 }
+
+#[test]
+fn test_typespec() -> CLQResult<()> {
+    let typespec = vec![
+        vec!["author".to_string(), "published".into(), "article".into()],
+        vec!["author".to_string(), "cited".into(), "article".into()],
+        vec!["author".to_string(), "published".into(), "book".into()],
+    ];
+    let (node_type_lookup, edge_type_lookup) = Transformer::process_typespec(
+        typespec,
+        "author",
+        vec!["article".to_string(), "book".into()],
+    )?;
+    assert_eq!(node_type_lookup.len(), 3);
+    assert_eq!(edge_type_lookup.len(), 2);
+    Ok(())
+}

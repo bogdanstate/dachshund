@@ -49,6 +49,9 @@ impl<TypeId: PartialEq> TypeIdsLookup<TypeId> {
             }
         })
     }
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
 }
 impl<T: PartialEq> Default for TypeIdsLookup<T> {
     fn default() -> Self {
