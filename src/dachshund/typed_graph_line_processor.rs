@@ -20,7 +20,7 @@ use std::rc::Rc;
 /// graph_ids seen so far.
 pub struct TypedGraphLineProcessor {
     pub core_type: String,
-    pub type_ids_lookup: Rc<TypeIdsLookup>,
+    pub type_ids_lookup: Rc<(TypeIdsLookup<NodeTypeId>, TypeIdsLookup<EdgeTypeId>)>,
     pub non_core_types: Rc<Vec<String>>,
     pub edge_types: Rc<Vec<String>>,
 }
@@ -48,14 +48,14 @@ impl LineProcessorBase for TypedGraphLineProcessor {
             let non_core_id: NodeId = vec[2].parse::<i64>()?.into();
             let edge_type: &str = vec[4].trim_end();
             let non_core_type: &str = vec[5].trim_end();
-            let non_core_type_id: NodeTypeId = *self.type_ids_lookup.require(non_core_type)?;
+            let non_core_type_id: NodeTypeId = *self.type_ids_lookup.0.require(non_core_type)?;
             let edge_type_id: EdgeTypeId = self
                 .edge_types
                 .iter()
                 .position(|r| r == edge_type)
                 .ok_or_else(CLQError::err_none)?
                 .into();
-            let core_type_id: NodeTypeId = *self.type_ids_lookup.require(&self.core_type)?;
+            let core_type_id: NodeTypeId = *self.type_ids_lookup.0.require(&self.core_type)?;
             return Ok(Box::new(EdgeRow {
                 graph_id,
                 source_id: core_id,
@@ -72,7 +72,7 @@ impl LineProcessorBase for TypedGraphLineProcessor {
         if node_type == self.core_type {
             non_core_type = None;
         } else {
-            let non_core_type_id: NodeTypeId = *self.type_ids_lookup.require(node_type)?;
+            let non_core_type_id: NodeTypeId = *self.type_ids_lookup.0.require(node_type)?;
             non_core_type = Some(non_core_type_id);
         }
         Ok(Box::new(CliqueRow {
@@ -85,7 +85,7 @@ impl LineProcessorBase for TypedGraphLineProcessor {
 impl TypedGraphLineProcessor {
     pub fn new(
         core_type: String,
-        type_ids_lookup: Rc<TypeIdsLookup>,
+        type_ids_lookup: Rc<(TypeIdsLookup<NodeTypeId>, TypeIdsLookup<EdgeTypeId>)>,
         non_core_types: Rc<Vec<String>>,
         edge_types: Rc<Vec<String>>,
     ) -> Self {

@@ -43,10 +43,11 @@ fn test_process_typespec() -> CLQResult<()> {
     let target_types = vec!["conference".to_string(), "journal".into()];
     let core_type: String = "author".to_string();
     let target_type_ids = Transformer::process_typespec(ts, &core_type, target_types)?;
-    assert_eq!(target_type_ids.require("conference")?.value(), 1);
-    assert_eq!(target_type_ids.require("journal")?.value(), 2);
+    assert_eq!(target_type_ids.0.require("conference")?.value(), 1);
+    assert_eq!(target_type_ids.0.require("journal")?.value(), 2);
     assert_eq!(
         target_type_ids
+            .0
             .require("conference")?
             .max_edge_count_with_core_node()
             .unwrap(),
@@ -54,6 +55,7 @@ fn test_process_typespec() -> CLQResult<()> {
     );
     assert_eq!(
         target_type_ids
+            .0
             .require("journal")?
             .max_edge_count_with_core_node()
             .unwrap(),
@@ -78,7 +80,7 @@ fn test_process_single_line() -> CLQResult<()> {
     assert_eq!(row.source_id, NodeId::from(1));
     assert_eq!(row.target_id, NodeId::from(2));
     let target_type_name: Option<String> =
-        transformer.target_type_ids_lookup.type_name(&row.target_type_id);
+        transformer.type_ids_lookup.0.type_name(&row.target_type_id);
     assert_eq!(target_type_name, Some("journal".to_owned()));
     Ok(())
 }
@@ -97,7 +99,8 @@ fn test_process_single_line_clique_row() -> CLQResult<()> {
     assert_eq!(row.graph_id.value(), 0);
     assert_eq!(row.node_id, NodeId::from(2));
     let target_type_name: Option<String> = transformer
-        .target_type_ids_lookup
+        .type_ids_lookup
+        .0
         .type_name(&row.target_type.unwrap());
     assert_eq!(target_type_name, Some("journal".to_owned()));
     let raw: String = "0\t1\tauthor\t\t\t".to_string();
