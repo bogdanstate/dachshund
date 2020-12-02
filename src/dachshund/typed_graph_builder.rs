@@ -239,6 +239,7 @@ pub struct TypedGraphBuilderWithCliques {
     pub edge_type_map: HashMap<(NodeTypeId, NodeTypeId), Vec<EdgeTypeId>>,
 }
 impl TypedGraphBuilderWithCliques {
+    #[allow(dead_code)]
     fn new(
         graph_id: GraphId,
         cliques: Vec<(BTreeSet<NodeId>, BTreeSet<NodeId>)>,

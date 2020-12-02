@@ -32,6 +32,14 @@ impl NodeTypeId {
             Some(n) => n + 1,
         });
     }
+    pub fn new(id: usize, core: bool, max_edge_count_with_core_node: Option<usize>) -> Self {
+        assert!(core ^ max_edge_count_with_core_node.is_some());
+        Self {
+            id,
+            core,
+            max_edge_count_with_core_node,
+        }
+    }
 }
 impl<T> From<T> for NodeTypeId
 where

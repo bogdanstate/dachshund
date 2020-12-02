@@ -8,7 +8,7 @@ extern crate lib_dachshund;
 
 use lib_dachshund::dachshund::candidate::Candidate;
 use lib_dachshund::dachshund::error::{CLQError, CLQResult};
-use lib_dachshund::dachshund::id_types::{GraphId, NodeId};
+use lib_dachshund::dachshund::id_types::{EdgeTypeId, GraphId, NodeId, NodeTypeId};
 use lib_dachshund::dachshund::line_processor::LineProcessorBase;
 use lib_dachshund::dachshund::row::{CliqueRow, EdgeRow};
 use lib_dachshund::dachshund::test_utils::{
@@ -17,6 +17,8 @@ use lib_dachshund::dachshund::test_utils::{
 };
 use lib_dachshund::dachshund::transformer::Transformer;
 use lib_dachshund::dachshund::typed_graph::TypedGraph;
+use lib_dachshund::dachshund::typed_graph_line_processor::TypedGraphLineProcessor;
+use std::rc::Rc;
 use std::sync::mpsc::channel;
 
 #[cfg(test)]
@@ -69,7 +71,7 @@ fn test_process_single_line() -> CLQResult<()> {
     let ts = gen_test_typespec();
     let transformer = gen_test_transformer(ts, "author".to_string())?;
     // graph_id source_id target_id target_type
-    let raw: String = "0\t1\t2\tauthor\tpublished_at\tjournal".to_string();
+    let raw = "0\t1\t2\tauthor\tpublished_at\tjournal".to_string();
 
     let row: EdgeRow = transformer
         .line_processor
@@ -319,5 +321,26 @@ fn test_typespec() -> CLQResult<()> {
     )?;
     assert_eq!(node_type_lookup.len(), 3);
     assert_eq!(edge_type_lookup.len(), 2);
+    let line_processor = TypedGraphLineProcessor::new(
+        "author".to_string(),
+        Rc::new((node_type_lookup, edge_type_lookup)),
+        Rc::new(vec!["article".to_string(), "book".into()]),
+        Rc::new(vec!["published".to_string(), "cited".into()]),
+    );
+    let raw: String = "0\t1\t2\tauthor\tpublished\tarticle".to_string();
+    let row = line_processor
+        .process_line(raw)?
+        .as_edge_row()
+        .ok_or_else(CLQError::err_none)?;
+    assert_eq!(row.graph_id.value(), 0);
+    assert_eq!(row.source_id, NodeId::from(1));
+    assert_eq!(row.target_id, NodeId::from(2));
+    assert_eq!(row.source_type_id, NodeTypeId::from(0 as usize));
+    assert_eq!(
+        row.target_type_id,
+        NodeTypeId::new(1 as usize, false, Some(2 as usize))
+    );
+    assert_eq!(row.edge_type_id, EdgeTypeId::from(0 as usize));
+
     Ok(())
 }

@@ -111,7 +111,7 @@ impl Transformer {
         }
         let mut edge_type_ids_lookup = TypeIdsLookup::new();
         for (i, edge_type) in edge_types.iter().enumerate() {
-            edge_type_ids_lookup.insert(&edge_type, EdgeTypeId::from(i + 1));
+            edge_type_ids_lookup.insert(&edge_type, EdgeTypeId::from(i));
         }
         Ok((target_type_ids_lookup, edge_type_ids_lookup))
     }
