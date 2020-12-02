@@ -13,7 +13,7 @@ use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::id_types::{GraphId, NodeId, NodeTypeId};
 use crate::dachshund::node::{Node, NodeEdge};
 use crate::dachshund::row::EdgeRow;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 pub struct TypedGraphBuilder {
     pub min_degree: Option<usize>,
@@ -51,7 +51,7 @@ impl GraphBuilderBase for TypedGraphBuilder {
     }
 }
 
-impl TypedGraphBuilder {
+pub trait TypedGraphBuilderBase {
     fn create_graph(
         nodes: HashMap<NodeId, Node>,
         core_ids: Vec<NodeId>,
@@ -147,7 +147,7 @@ impl TypedGraphBuilder {
     /// Trims edges greedily, until all edges in the graph have degree at least min_degree.
     /// Note that this function does not delete any nodes -- just finds nodes to delete. It is
     /// called by `prune`, which actually does the deletion.
-    pub fn trim_edges(node_map: &mut HashMap<NodeId, Node>, min_degree: &usize) -> HashSet<NodeId> {
+    fn trim_edges(node_map: &mut HashMap<NodeId, Node>, min_degree: &usize) -> HashSet<NodeId> {
         let mut degree_map: HashMap<NodeId, usize> = HashMap::new();
         for (node_id, node) in node_map.iter() {
             let node_degree: usize = node.degree();
@@ -180,7 +180,7 @@ impl TypedGraphBuilder {
     /// new graph, where all nodes are assured to have degree at least min_degree.
     /// The provision of a TypedGraph is necessary, since the notion of "degree" does
     /// not make sense outside of a graph.
-    pub fn prune(
+    fn prune(
         graph: TypedGraph,
         rows: &Vec<EdgeRow>,
         min_degree: usize,
@@ -229,5 +229,77 @@ impl TypedGraphBuilder {
             .collect();
         // todo: make member of struct
         (filtered_source_ids, filtered_target_ids, filtered_rows)
+    }
+
+}
+
+pub struct TypedGraphBuilder {
+    pub min_degree: Option<usize>,
+    pub graph_id: GraphId,
+}
+impl TypedGraphBuilderBase for TypedGraphBuilder {}
+impl GraphBuilderBase for TypedGraphBuilder {
+    type GraphType = TypedGraph;
+    type RowType = EdgeRow;
+
+    fn from_vector(&self, data: &Vec<EdgeRow>) -> CLQResult<TypedGraph> {
+        let mut source_ids: HashSet<NodeId> = HashSet::new();
+        let mut target_ids: HashSet<NodeId> = HashSet::new();
+        let mut target_type_ids: HashMap<NodeId, NodeTypeId> = HashMap::new();
+        for r in data.iter() {
+            assert!(self.graph_id == r.graph_id);
+            source_ids.insert(r.source_id);
+            target_ids.insert(r.target_id);
+            target_type_ids.insert(r.target_id, r.target_type_id);
+        }
+
+        // warrant a canonical order on the id vectors
+        let mut source_ids_vec: Vec<NodeId> = source_ids.into_iter().collect();
+        source_ids_vec.sort();
+        let mut target_ids_vec: Vec<NodeId> = target_ids.into_iter().collect();
+        target_ids_vec.sort();
+
+        let mut node_map: HashMap<NodeId, Node> =
+            Self::init_nodes(&source_ids_vec, &target_ids_vec, &target_type_ids);
+        Self::populate_edges(data, &mut node_map)?;
+        let mut graph = Self::create_graph(node_map, source_ids_vec, target_ids_vec)?;
+        if let Some(min_degree) = self.min_degree {
+            graph = Self::prune(graph, data, min_degree)?;
+        }
+        Ok(graph)
+    }
+}
+
+pub struct TypedGraphBuilderWithCliques {
+    pub graph_id: GraphId,
+    pub cliques: Vec<BTreeSet<NodeId>>,
+}
+impl TypedGraphBuilderBase for TypedGraphBuilderWithCliques {}
+impl GraphBuilderBase for TypedGraphBuilderWithCliques {
+    type GraphType = TypedGraph;
+    type RowType = EdgeRow;
+
+    fn from_vector(&self, data: &Vec<EdgeRow>) -> CLQResult<TypedGraph> {
+        let mut source_ids: HashSet<NodeId> = HashSet::new();
+        let mut target_ids: HashSet<NodeId> = HashSet::new();
+        let mut target_type_ids: HashMap<NodeId, NodeTypeId> = HashMap::new();
+        for r in data.iter() {
+            assert!(self.graph_id == r.graph_id);
+            source_ids.insert(r.source_id);
+            target_ids.insert(r.target_id);
+            target_type_ids.insert(r.target_id, r.target_type_id);
+        }
+
+        // warrant a canonical order on the id vectors
+        let mut source_ids_vec: Vec<NodeId> = source_ids.into_iter().collect();
+        source_ids_vec.sort();
+        let mut target_ids_vec: Vec<NodeId> = target_ids.into_iter().collect();
+        target_ids_vec.sort();
+
+        let mut node_map: HashMap<NodeId, Node> =
+            Self::init_nodes(&source_ids_vec, &target_ids_vec, &target_type_ids);
+        Self::populate_edges(data, &mut node_map)?;
+        let mut graph = Self::create_graph(node_map, source_ids_vec, target_ids_vec)?;
+        Ok(graph)
     }
 }
