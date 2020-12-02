@@ -14,7 +14,9 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 pub struct SimpleDirectedGraphBuilder {}
 
 impl GraphBuilderBase for SimpleDirectedGraphBuilder {
+
     type GraphType = SimpleDirectedGraph;
+    type RowType = (i64, i64);
 
     // builds a graph from a vector of IDs. Repeated edges are ignored.
     #[allow(clippy::ptr_arg)]

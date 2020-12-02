@@ -15,6 +15,7 @@ use std::collections::HashMap;
 
 pub struct TypedGraphBuilder {}
 impl GraphBuilder<TypedGraph> for TypedGraphBuilder {
+
     fn create_graph(
         nodes: HashMap<NodeId, Node>,
         core_ids: Vec<NodeId>,
