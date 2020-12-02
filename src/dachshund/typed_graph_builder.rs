@@ -235,7 +235,8 @@ pub struct TypedGraphBuilderWithCliques {
     pub graph_id: GraphId,
     pub cliques: Vec<(BTreeSet<NodeId>, BTreeSet<NodeId>)>,
     pub core_type_id: NodeTypeId,
-    pub non_core_type_map: HashMap<NodeId, (NodeTypeId, EdgeTypeId)>,
+    pub non_core_type_map: HashMap<NodeId, NodeTypeId>,
+    pub edge_type_map: HashMap<(NodeTypeId, NodeTypeId), Vec<EdgeTypeId>>,
 }
 impl TypedGraphBuilderBase for TypedGraphBuilderWithCliques {}
 impl GraphBuilderBase for TypedGraphBuilderWithCliques {
@@ -278,7 +279,11 @@ impl GraphBuilderBaseWithPreProcessing for TypedGraphBuilderWithCliques {
             let target_type = el.target_type_id.clone();
             let edge_type = el.edge_type_id.clone();
             self.non_core_type_map
-                .insert(el.source_id.clone(), (target_type, edge_type));
+                .insert(el.source_id.clone(), target_type.clone());
+            self.edge_type_map
+                .entry((self.core_type_id, target_type))
+                .or_insert(Vec::new())
+                .push(edge_type);
             row_set.insert(el);
         }
 
@@ -304,19 +309,27 @@ impl GraphBuilderBaseWithCliques for TypedGraphBuilderWithCliques {
     type CliquesType = (BTreeSet<NodeId>, BTreeSet<NodeId>);
 
     fn get_clique_edges(&self, id1: NodeId, id2: NodeId) -> CLQResult<Vec<EdgeRow>> {
-        let (target_type_id, edge_type_id) = self
+        let source_type_id = self.core_type_id.clone();
+        let target_type_id = self
             .non_core_type_map
             .get(&id2)
             .ok_or_else(CLQError::err_none)?
             .clone();
-        Ok(vec![EdgeRow {
-            graph_id: self.graph_id.clone(),
-            source_id: id1,
-            target_id: id2,
-            source_type_id: self.core_type_id.clone(),
-            target_type_id,
-            edge_type_id,
-        }])
+        Ok(self
+            .edge_type_map
+            .get(&(source_type_id, target_type_id))
+            .ok_or_else(CLQError::err_none)?
+            .iter()
+            .cloned()
+            .map(|edge_type_id| EdgeRow {
+                graph_id: self.graph_id.clone(),
+                source_id: id1,
+                target_id: id2,
+                source_type_id: self.core_type_id.clone(),
+                target_type_id,
+                edge_type_id,
+            })
+            .collect())
     }
     fn get_cliques(&self) -> &Vec<(BTreeSet<NodeId>, BTreeSet<NodeId>)> {
         &self.cliques
