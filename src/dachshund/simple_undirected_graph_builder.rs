@@ -5,14 +5,15 @@
  * LICENSE file in the root directory of this source tree.
  */
 use crate::dachshund::error::CLQResult;
-use crate::dachshund::graph_builder_base::{GraphBuilderBase, GraphBuilderBaseWithPreProcessing};
+use crate::dachshund::graph_builder_base::{
+    GraphBuilderBase, GraphBuilderBaseWithCliques, GraphBuilderBaseWithPreProcessing,
+};
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::node::SimpleNode;
 use crate::dachshund::simple_undirected_graph::SimpleUndirectedGraph;
 use itertools::Itertools;
 use rand::prelude::*;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
-use std::hash::Hash;
 pub struct SimpleUndirectedGraphBuilder {}
 
 pub trait TSimpleUndirectedGraphBuilder:
@@ -126,18 +127,6 @@ impl SimpleUndirectedGraphBuilderWithCliques {
     }
 }
 
-trait GraphBuilderBaseWithCliques: GraphBuilderBaseWithPreProcessing
-where
-    <Self as GraphBuilderBase>::RowType: Eq,
-    <Self as GraphBuilderBase>::RowType: Hash,
-{
-    fn get_clique_edges(
-        &self,
-        id1: NodeId,
-        id2: NodeId,
-    ) -> Vec<<Self as GraphBuilderBase>::RowType>;
-    fn get_cliques(&self) -> &Vec<BTreeSet<NodeId>>;
-}
 impl TSimpleUndirectedGraphBuilder for SimpleUndirectedGraphBuilderWithCliques {}
 
 impl GraphBuilderBaseWithPreProcessing for SimpleUndirectedGraphBuilderWithCliques {
