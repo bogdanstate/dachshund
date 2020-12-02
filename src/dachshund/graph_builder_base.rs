@@ -14,5 +14,5 @@ where
 {
     type GraphType;
     type RowType;
-    fn from_vector(&self, data: &Vec<Self::RowType>) -> CLQResult<Self::GraphType>;
+    fn from_vector(&self, data: Vec<Self::RowType>) -> CLQResult<Self::GraphType>;
 }

@@ -23,7 +23,7 @@ impl GraphBuilderBase for TypedGraphBuilder {
     type GraphType = TypedGraph;
     type RowType = EdgeRow;
 
-    fn from_vector(&self, data: &Vec<EdgeRow>) -> CLQResult<TypedGraph> {
+    fn from_vector(&self, data: Vec<EdgeRow>) -> CLQResult<TypedGraph> {
         let mut source_ids: HashSet<NodeId> = HashSet::new();
         let mut target_ids: HashSet<NodeId> = HashSet::new();
         let mut target_type_ids: HashMap<NodeId, NodeTypeId> = HashMap::new();
@@ -42,10 +42,10 @@ impl GraphBuilderBase for TypedGraphBuilder {
 
         let mut node_map: HashMap<NodeId, Node> =
             Self::init_nodes(&source_ids_vec, &target_ids_vec, &target_type_ids);
-        Self::populate_edges(data, &mut node_map)?;
+        Self::populate_edges(&data, &mut node_map)?;
         let mut graph = Self::create_graph(node_map, source_ids_vec, target_ids_vec)?;
         if let Some(min_degree) = self.min_degree {
-            graph = Self::prune(graph, data, min_degree)?;
+            graph = Self::prune(graph, &data, min_degree)?;
         }
         Ok(graph)
     }
