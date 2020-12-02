@@ -5,17 +5,18 @@
  * LICENSE file in the root directory of this source tree.
  */
 use crate::dachshund::error::CLQResult;
-use crate::dachshund::graph_builder_base::GraphBuilderBase;
+use crate::dachshund::graph_builder_base::{GraphBuilderBase,
+GraphBuilderBaseWithPreProcessing};
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::node::SimpleNode;
 use crate::dachshund::simple_undirected_graph::SimpleUndirectedGraph;
 use itertools::Itertools;
 use rand::prelude::*;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::hash::Hash;
 pub struct SimpleUndirectedGraphBuilder {}
 
 pub trait TSimpleUndirectedGraphBuilder: GraphBuilderBase<GraphType=SimpleUndirectedGraph, RowType = (i64, i64)> {
-
 
     // Build a graph with n vertices with every possible edge.
     fn get_complete_graph(&self, n: u64) -> CLQResult<Self::GraphType> {
@@ -97,13 +98,15 @@ pub trait TSimpleUndirectedGraphBuilder: GraphBuilderBase<GraphType=SimpleUndire
     }
 }
 
-impl <T:TSimpleUndirectedGraphBuilder> GraphBuilderBase for T {
+impl <T:GraphBuilderBaseWithPreProcessing + TSimpleUndirectedGraphBuilder> GraphBuilderBase for T {
     type GraphType = SimpleUndirectedGraph;
     type RowType = (i64, i64);
     // builds a graph from a vector of IDs. Repeated edges are ignored.
     // Edges only need to be provided once (this being an undirected graph)
+  
     #[allow(clippy::ptr_arg)]
     fn from_vector(&self, data: Vec<(i64, i64)>) -> CLQResult<SimpleUndirectedGraph> {
+        let data = self.pre_process_rows(data)?;
         let ids = Self::get_node_ids(&data);
         let nodes = Self::get_nodes(ids);
         Ok(SimpleUndirectedGraph {
@@ -113,7 +116,7 @@ impl <T:TSimpleUndirectedGraphBuilder> GraphBuilderBase for T {
     }
 }
 impl TSimpleUndirectedGraphBuilder for SimpleUndirectedGraphBuilder {}
-
+impl GraphBuilderBaseWithPreProcessing for SimpleUndirectedGraphBuilder {}
 pub struct SimpleUndirectedGraphBuilderWithCliques {
     cliques: Vec<BTreeSet<NodeId>>,
 }
@@ -122,32 +125,40 @@ impl SimpleUndirectedGraphBuilderWithCliques {
         Self { cliques }
     }
 }
-impl TSimpleUndirectedGraphBuilder for SimpleUndirectedGraphBuilderWithCliques {}
 
-trait GraphBuilderBaseWithCliques: GraphBuilderBase {
+trait GraphBuilderBaseWithCliques: GraphBuilderBaseWithPreProcessing 
+where <Self as GraphBuilderBase>::RowType: Eq,
+  <Self as GraphBuilderBase>::RowType: Hash
+{
 
     fn get_clique_edges(&self, id1: NodeId, id2: NodeId) -> Vec<<Self as GraphBuilderBase>::RowType>;
-    fn from_vector_with_cliques(&self, data: Vec<<Self as GraphBuilderBase>::RowType>) -> CLQResult<<Self as GraphBuilderBase>::GraphType> {
+    fn get_cliques(&self) -> &Vec<BTreeSet<NodeId>>;
+}
+impl TSimpleUndirectedGraphBuilder for SimpleUndirectedGraphBuilderWithCliques {}
 
-        let row_set: HashSet<<Self as GraphBuilderBase>::RowType> = data.into_iter().collect();
+impl GraphBuilderBaseWithPreProcessing for SimpleUndirectedGraphBuilderWithCliques {
+    fn pre_process_rows(&self, data: Vec<<Self as GraphBuilderBase>::RowType>) ->
+    CLQResult<Vec<<Self as GraphBuilderBase>::RowType>> {
+        let mut row_set: HashSet<<Self as GraphBuilderBase>::RowType> = data.into_iter().collect();
 
-        for clique in &self.cliques {
+        for clique in self.get_cliques() {
             for comb in clique.iter().combinations(2) {
                 let id1 = comb.get(0).unwrap().clone();
                 let id2 = comb.get(1).unwrap().clone();
-                for clique_edge in self.get_clique_edges().into_iter() {
-                    row_set.insert(clique_edge)
+                for clique_edge in self.get_clique_edges(*id1, *id2).into_iter() {
+                    row_set.insert(clique_edge);
                 }
             }
         }
         let rows_with_cliques: Vec<_> = row_set.into_iter().collect();
-        self.from_vector(&rows_with_cliques)
-
+        Ok(rows_with_cliques)
     }
 }
-
 impl GraphBuilderBaseWithCliques for SimpleUndirectedGraphBuilderWithCliques {
     fn get_clique_edges(&self, id1: NodeId, id2: NodeId) -> Vec<(i64, i64)> {
         vec![(id1.value(), id2.value())]
+    }
+    fn get_cliques(&self) -> &Vec<BTreeSet<NodeId>> {
+        &self.cliques    
     }
 }

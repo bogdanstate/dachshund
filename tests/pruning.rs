@@ -16,6 +16,7 @@ use lib_dachshund::dachshund::typed_graph::TypedGraph;
 use lib_dachshund::dachshund::typed_graph_builder::TypedGraphBuilder;
 use std::collections::HashSet;
 use std::sync::mpsc::channel;
+use crate::lib_dachshund::dachshund::typed_graph_builder::TypedGraphBuilderBase;
 
 pub fn gen_test_typespec() -> Vec<Vec<String>> {
     return vec![
