@@ -10,6 +10,7 @@ use crate::dachshund::error::CLQResult;
 use crate::dachshund::id_types::{EdgeTypeId, NodeTypeId};
 use crate::dachshund::type_ids_lookup::TypeIdsLookup;
 use std::collections::BTreeSet;
+use crate::dachshund::graph_schema::GraphSchema;
 
 pub struct TypedGraphSchema {
     node_type_lookup: TypeIdsLookup<NodeTypeId>,
@@ -89,3 +90,5 @@ impl TypedGraphSchema {
         self.node_type_lookup.type_name(non_core_type_id)
     }
 }
+
+impl GraphSchema for TypedGraphSchema {}

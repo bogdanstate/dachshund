@@ -22,6 +22,7 @@ use crate::dachshund::shortest_paths::ShortestPaths;
 use crate::dachshund::transitivity::Transitivity;
 use std::collections::hash_map::{Keys, Values};
 use std::collections::HashMap;
+use crate::dachshund::graph_schema::SimpleGraphSchema;
 
 pub trait UndirectedGraph
 where
@@ -35,6 +36,7 @@ pub struct SimpleUndirectedGraph {
 }
 impl GraphBase for SimpleUndirectedGraph {
     type NodeType = SimpleNode;
+    type SchemaType = SimpleGraphSchema;
 
     /// core and non-core IDs are the same for a `SimpleUndirectedGraph`.
     fn get_core_ids(&self) -> &Vec<NodeId> {

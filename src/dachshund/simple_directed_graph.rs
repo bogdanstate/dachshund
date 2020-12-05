@@ -12,6 +12,7 @@ use crate::dachshund::id_types::NodeId;
 use crate::dachshund::node::{DirectedNodeBase, NodeBase, SimpleDirectedNode};
 use std::collections::hash_map::{Keys, Values};
 use std::collections::{HashMap, HashSet};
+use crate::dachshund::graph_schema::SimpleGraphSchema;
 
 pub trait DirectedGraph
 where
@@ -44,6 +45,7 @@ pub struct SimpleDirectedGraph {
 }
 impl GraphBase for SimpleDirectedGraph {
     type NodeType = SimpleDirectedNode;
+    type SchemaType = SimpleGraphSchema;
 
     /// core and non-core IDs are the same for a `SimpleDirectedGraph`.
     fn get_core_ids(&self) -> &Vec<NodeId> {

@@ -29,6 +29,7 @@ pub use dachshund::coreness::Coreness;
 pub use dachshund::eigenvector_centrality::EigenvectorCentrality;
 pub use dachshund::graph_base::GraphBase;
 pub use dachshund::graph_builder_base::GraphBuilderBase;
+pub use dachshund::graph_schema::GraphSchema;
 pub use dachshund::id_types::{EdgeTypeId, GraphId, NodeId, NodeTypeId};
 pub use dachshund::input::Input;
 pub use dachshund::laplacian::Laplacian;

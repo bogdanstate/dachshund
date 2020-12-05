@@ -4,6 +4,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+use crate::dachshund::graph_schema::GraphSchema;
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::node::NodeBase;
 use std::collections::hash_map::{Keys, Values};
@@ -16,8 +17,10 @@ pub trait GraphBase
 where
     Self: Sized,
     Self::NodeType: NodeBase,
+    Self::SchemaType: GraphSchema,
 {
     type NodeType;
+    type SchemaType;
 
     fn get_core_ids(&self) -> &Vec<NodeId>;
     fn get_non_core_ids(&self) -> Option<&Vec<NodeId>>;

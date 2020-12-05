@@ -8,6 +8,7 @@ extern crate nalgebra as na;
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::node::Node;
+use crate::dachshund::typed_graph_schema::TypedGraphSchema;
 use std::collections::hash_map::{Keys, Values};
 use std::collections::HashMap;
 
@@ -24,6 +25,7 @@ pub struct TypedGraph {
 }
 impl GraphBase for TypedGraph {
     type NodeType = Node;
+    type SchemaType = TypedGraphSchema;
 
     fn get_core_ids(&self) -> &Vec<NodeId> {
         &self.core_ids
