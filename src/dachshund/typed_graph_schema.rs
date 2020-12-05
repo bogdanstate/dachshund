@@ -7,10 +7,10 @@
 extern crate clap;
 extern crate serde_json;
 use crate::dachshund::error::CLQResult;
+use crate::dachshund::graph_schema::GraphSchema;
 use crate::dachshund::id_types::{EdgeTypeId, NodeTypeId};
 use crate::dachshund::type_ids_lookup::TypeIdsLookup;
 use std::collections::BTreeSet;
-use crate::dachshund::graph_schema::GraphSchema;
 
 pub struct TypedGraphSchema {
     node_type_lookup: TypeIdsLookup<NodeTypeId>,

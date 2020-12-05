@@ -106,7 +106,6 @@ impl Transformer {
         debug: bool,
         long_format: bool,
     ) -> CLQResult<Self> {
-
         let line_processor = Arc::new(TypedGraphLineProcessor::new(schema.clone()));
         let transformer = Self {
             schema,
@@ -141,7 +140,7 @@ impl Transformer {
         let min_degree: usize = arg_value("min_degree")?.parse::<usize>()?;
         let core_type: String = arg_value("core_type")?.parse::<String>()?;
         let long_format: bool = arg_value("long_format")?.parse::<bool>()?;
-        
+
         let search_problem = Rc::new(SearchProblem::new(
             beam_size,
             alpha,
@@ -153,13 +152,8 @@ impl Transformer {
             min_degree,
         ));
         let schema = Rc::new(TypedGraphSchema::new(typespec, core_type)?);
-        
-        let transformer = Transformer::new(
-            schema,
-            search_problem,
-            debug,
-            long_format,
-        )?;
+
+        let transformer = Transformer::new(schema, search_problem, debug, long_format)?;
         Ok(transformer)
     }
 

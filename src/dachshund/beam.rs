@@ -24,8 +24,7 @@ use crate::dachshund::typed_graph::TypedGraph;
 use std::rc::Rc;
 
 /// The result of a beam search.
-pub struct TypedGraphCliqueSearchResult<'a>
-{
+pub struct TypedGraphCliqueSearchResult<'a> {
     pub top_candidate: Candidate<'a, TypedGraph>,
     pub num_steps: usize,
 }
@@ -33,8 +32,7 @@ pub struct TypedGraphCliqueSearchResult<'a>
 /// Used for (quasi-clique) detection. A singleton object that keeps state across the beam search.
 /// At any point this object considers a "beam" of candidates that is always kept under beam_size,
 /// to avoid exponential blowup of the search space.
-pub struct TypedGraphCliqueSearchBeam<'a>
-{
+pub struct TypedGraphCliqueSearchBeam<'a> {
     pub candidates: Vec<Candidate<'a, TypedGraph>>,
     pub graph: &'a TypedGraph,
     pub search_problem: Rc<SearchProblem>,
@@ -124,7 +122,8 @@ impl<'a> TypedGraphCliqueSearchBeam<'a> {
             let root_id = ids_vec
                 .choose(&mut rng)
                 .ok_or_else(|| format!("Problem finding root in graph_id: {}", graph_id.value()))?;
-            let candidate_node = TypedGraphCliqueSearchBeam::random_walk(&mut rng, graph, *root_id, 7)?;
+            let candidate_node =
+                TypedGraphCliqueSearchBeam::random_walk(&mut rng, graph, *root_id, 7)?;
             let candidate = Candidate::new(candidate_node, graph, &scorer)?;
             candidates.push(candidate);
         }

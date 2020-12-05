@@ -4,9 +4,6 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-use std::collections::HashSet;
-use std::fmt::Debug;
-use std::rc::Rc;
 use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::id_types::{GraphId, NodeId, NodeTypeId};
@@ -16,12 +13,14 @@ use crate::dachshund::search_problem::SearchProblem;
 use crate::dachshund::transformer::Transformer;
 use crate::dachshund::typed_graph::TypedGraph;
 use crate::dachshund::typed_graph_schema::TypedGraphSchema;
+use std::collections::HashSet;
+use std::fmt::Debug;
+use std::rc::Rc;
 
 pub fn gen_test_transformer(
     typespec: Vec<Vec<String>>,
     core_type: String,
 ) -> CLQResult<Transformer> {
-    
     let search_problem = Rc::new(SearchProblem::new(
         20,
         1.0,
@@ -33,13 +32,8 @@ pub fn gen_test_transformer(
         0,
     ));
     let schema = Rc::new(TypedGraphSchema::new(typespec, core_type)?);
-    
-    let transformer = Transformer::new(
-        schema,
-        search_problem,
-        true,
-        false,
-    )?;
+
+    let transformer = Transformer::new(schema, search_problem, true, false)?;
     Ok(transformer)
 }
 

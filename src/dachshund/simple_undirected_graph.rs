@@ -15,6 +15,7 @@ use crate::dachshund::connectivity::ConnectivityUndirected;
 use crate::dachshund::coreness::Coreness;
 use crate::dachshund::eigenvector_centrality::EigenvectorCentrality;
 use crate::dachshund::graph_base::GraphBase;
+use crate::dachshund::graph_schema::SimpleGraphSchema;
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::laplacian::Laplacian;
 use crate::dachshund::node::{NodeBase, NodeEdgeBase, SimpleNode};
@@ -22,7 +23,6 @@ use crate::dachshund::shortest_paths::ShortestPaths;
 use crate::dachshund::transitivity::Transitivity;
 use std::collections::hash_map::{Keys, Values};
 use std::collections::HashMap;
-use crate::dachshund::graph_schema::SimpleGraphSchema;
 
 pub trait UndirectedGraph
 where

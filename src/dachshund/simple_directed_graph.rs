@@ -8,11 +8,11 @@ use crate::dachshund::brokerage::Brokerage;
 use crate::dachshund::connected_components::{ConnectedComponents, ConnectedComponentsDirected};
 use crate::dachshund::connectivity::{Connectivity, ConnectivityDirected};
 use crate::dachshund::graph_base::GraphBase;
+use crate::dachshund::graph_schema::SimpleGraphSchema;
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::node::{DirectedNodeBase, NodeBase, SimpleDirectedNode};
 use std::collections::hash_map::{Keys, Values};
 use std::collections::{HashMap, HashSet};
-use crate::dachshund::graph_schema::SimpleGraphSchema;
 
 pub trait DirectedGraph
 where

@@ -18,10 +18,10 @@ use lib_dachshund::dachshund::input::Input;
 use lib_dachshund::dachshund::output::Output;
 use lib_dachshund::dachshund::row::CliqueRow;
 use lib_dachshund::dachshund::row::EdgeRow;
+use lib_dachshund::dachshund::search_problem::SearchProblem;
 use lib_dachshund::dachshund::test_utils::{
     assert_nodes_have_ids, gen_test_transformer, process_raw_vector,
 };
-use lib_dachshund::dachshund::search_problem::SearchProblem;
 use lib_dachshund::dachshund::transformer::Transformer;
 use lib_dachshund::dachshund::transformer_base::TransformerBase;
 use lib_dachshund::dachshund::typed_graph::TypedGraph;
@@ -45,8 +45,7 @@ fn test_init_beam_with_clique_rows() -> CLQResult<()> {
     let graph_id: GraphId = 0.into();
     let transformer: Transformer = gen_test_transformer(typespec, "author".to_string())?;
     let rows: Vec<EdgeRow> = process_raw_vector(&transformer, raw)?;
-    let article_type: NodeTypeId =
-    *transformer.schema.get_node_type_id("article".to_string())?;
+    let article_type: NodeTypeId = *transformer.schema.get_node_type_id("article".to_string())?;
     assert_eq!(article_type.value(), 1);
     let clique_rows: Vec<CliqueRow> = vec![
         CliqueRow::new(graph_id, 1, None),
@@ -152,13 +151,8 @@ fn test_init_beam_with_clique_rows_input() -> CLQResult<()> {
             3,
             0,
         ));
-        let schema = Rc::new(TypedGraphSchema::new(typespec, "author".into())?); 
-        let mut transformer = Transformer::new(
-            schema,
-            search_problem,
-            true,
-            true,
-        )?;
+        let schema = Rc::new(TypedGraphSchema::new(typespec, "author".into())?);
+        let mut transformer = Transformer::new(schema, search_problem, true, true)?;
         let text = raw.join("\n");
         let bytes = text.as_bytes();
         let input = Input::string(&bytes);
@@ -207,13 +201,8 @@ fn test_init_beam_with_clique_rows_input_one_epoch() -> CLQResult<()> {
         3,
         0,
     ));
-    let schema = Rc::new(TypedGraphSchema::new(typespec, "author".into())?); 
-    let mut transformer = Transformer::new(
-        schema,
-        search_problem,
-        true,
-        true,
-    )?;
+    let schema = Rc::new(TypedGraphSchema::new(typespec, "author".into())?);
+    let mut transformer = Transformer::new(schema, search_problem, true, true)?;
     let text = raw.join("\n");
     let bytes = text.as_bytes();
     let input = Input::string(&bytes);
@@ -251,13 +240,8 @@ fn test_beam_with_empty_graph_after_pruning() -> CLQResult<()> {
         3,
         10,
     ));
-    let schema = Rc::new(TypedGraphSchema::new(typespec, "author".into())?); 
-    let mut transformer = Transformer::new(
-        schema,
-        search_problem,
-        true,
-        true,
-    )?;
+    let schema = Rc::new(TypedGraphSchema::new(typespec, "author".into())?);
+    let mut transformer = Transformer::new(schema, search_problem, true, true)?;
     let text = raw.join("\n");
     let bytes = text.as_bytes();
     let input = Input::string(&bytes);
