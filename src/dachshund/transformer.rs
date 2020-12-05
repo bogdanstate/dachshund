@@ -101,31 +101,12 @@ impl Transformer {
     ///     machine-unfriendly) wide format.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        typespec: Vec<Vec<String>>,
-        beam_size: usize,
-        alpha: f32,
-        global_thresh: Option<f32>,
-        local_thresh: Option<f32>,
-        num_to_search: usize,
-        num_epochs: usize,
-        max_repeated_prior_scores: usize,
+        schema: Rc<TypedGraphSchema>,
+        search_problem: Rc<SearchProblem>,
         debug: bool,
-        min_degree: usize,
-        core_type: String,
         long_format: bool,
     ) -> CLQResult<Self> {
-        let search_problem = Rc::new(SearchProblem::new(
-            beam_size,
-            alpha,
-            global_thresh,
-            local_thresh,
-            num_to_search,
-            num_epochs,
-            max_repeated_prior_scores,
-            min_degree,
-        ));
 
-        let schema = Rc::new(TypedGraphSchema::new(typespec, core_type)?);
         let line_processor = Arc::new(TypedGraphLineProcessor::new(schema.clone()));
         let transformer = Self {
             schema,
@@ -160,8 +141,8 @@ impl Transformer {
         let min_degree: usize = arg_value("min_degree")?.parse::<usize>()?;
         let core_type: String = arg_value("core_type")?.parse::<String>()?;
         let long_format: bool = arg_value("long_format")?.parse::<bool>()?;
-        let transformer = Transformer::new(
-            typespec,
+        
+        let search_problem = Rc::new(SearchProblem::new(
             beam_size,
             alpha,
             global_thresh,
@@ -169,9 +150,14 @@ impl Transformer {
             num_to_search,
             num_epochs,
             max_repeated_prior_scores,
-            debug,
             min_degree,
-            core_type,
+        ));
+        let schema = Rc::new(TypedGraphSchema::new(typespec, core_type)?);
+        
+        let transformer = Transformer::new(
+            schema,
+            search_problem,
+            debug,
             long_format,
         )?;
         Ok(transformer)

@@ -15,6 +15,7 @@ use lib_dachshund::dachshund::test_utils::{
     assert_nodes_have_ids, gen_single_clique, gen_test_transformer, gen_test_typespec,
     process_raw_vector,
 };
+use lib_dachshund::dachshund::search_problem::SearchProblem;
 use lib_dachshund::dachshund::transformer::Transformer;
 use lib_dachshund::dachshund::typed_graph::TypedGraph;
 use lib_dachshund::dachshund::typed_graph_line_processor::TypedGraphLineProcessor;
@@ -228,21 +229,27 @@ fn test_process_medium_clique_with_insufficient_epochs() -> CLQResult<()> {
         vec!["published_at".to_string()],
     );
     assert_eq!(clique_rows.len(), 200);
+    
+    let search_problem = Rc::new(SearchProblem::new(
+        20,
+        1.0,
+        Some(1.0),
+        Some(1.0),
+        20,
+        10,
+        3,
+        0,
+    ));
+    let schema = Rc::new(TypedGraphSchema::new(ts.clone(), "author".into())?); 
+    let transformer = Transformer::new(
+        schema,
+        search_problem,
+        true,
+        false,
+    )?;
+
     test_expected_clique(
-        Transformer::new(
-            ts,
-            20,
-            1.0,
-            Some(1.0),
-            Some(1.0),
-            20,
-            10,
-            3,
-            true, // with 10 epochs
-            0,    // min_degree = 0
-            "author".to_string(),
-            false,
-        )?,
+        transformer,
         clique_rows,
         |_graph, res| {
             assert_eq!(res.core_ids.len() + res.non_core_ids.len(), 11);
