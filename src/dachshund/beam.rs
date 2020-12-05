@@ -24,7 +24,7 @@ use crate::dachshund::typed_graph::TypedGraph;
 use std::rc::Rc;
 
 /// The result of a beam search.
-pub struct BeamSearchResult<'a>
+pub struct TypedGraphCliqueSearchResult<'a>
 {
     pub top_candidate: Candidate<'a, TypedGraph>,
     pub num_steps: usize,
@@ -33,7 +33,7 @@ pub struct BeamSearchResult<'a>
 /// Used for (quasi-clique) detection. A singleton object that keeps state across the beam search.
 /// At any point this object considers a "beam" of candidates that is always kept under beam_size,
 /// to avoid exponential blowup of the search space.
-pub struct Beam<'a>
+pub struct TypedGraphCliqueSearchBeam<'a>
 {
     pub candidates: Vec<Candidate<'a, TypedGraph>>,
     pub graph: &'a TypedGraph,
@@ -44,7 +44,7 @@ pub struct Beam<'a>
     scorer: Scorer,
 }
 
-impl<'a> Beam<'a> {
+impl<'a> TypedGraphCliqueSearchBeam<'a> {
     /// performs a random walk of length `length` along the graph,
     /// starting at a particular node.
     fn random_walk(
@@ -92,7 +92,7 @@ impl<'a> Beam<'a> {
         num_non_core_types: usize,
         search_problem: Rc<SearchProblem>,
         graph_id: GraphId,
-    ) -> CLQResult<Beam<'a>> {
+    ) -> CLQResult<TypedGraphCliqueSearchBeam<'a>> {
         let core_ids: &Vec<NodeId> = &graph.get_core_ids();
         let non_core_ids: &Vec<NodeId> = &graph.get_non_core_ids().unwrap();
 
@@ -124,12 +124,12 @@ impl<'a> Beam<'a> {
             let root_id = ids_vec
                 .choose(&mut rng)
                 .ok_or_else(|| format!("Problem finding root in graph_id: {}", graph_id.value()))?;
-            let candidate_node = Beam::random_walk(&mut rng, graph, *root_id, 7)?;
+            let candidate_node = TypedGraphCliqueSearchBeam::random_walk(&mut rng, graph, *root_id, 7)?;
             let candidate = Candidate::new(candidate_node, graph, &scorer)?;
             candidates.push(candidate);
         }
         let visited_candidates: HashSet<u64> = HashSet::new();
-        Ok(Beam {
+        Ok(TypedGraphCliqueSearchBeam {
             candidates,
             graph,
             search_problem,
@@ -216,7 +216,7 @@ impl<'a> Beam<'a> {
         }
 
         if self.verbose {
-            eprintln!("Beam now contains:");
+            eprintln!("TypedGraphCliqueSearchBeam now contains:");
         }
         for mut ell in v {
             if new_candidates.len() < beam_size {
@@ -234,7 +234,7 @@ impl<'a> Beam<'a> {
     /// score resulting from a one step search is repeated `max_repeated_prior_scores`
     /// times, the search is terminated early. (Note that the search has a stochastic
     /// component, which is why repeating the search may yield different results).
-    pub fn run_search(&mut self) -> CLQResult<BeamSearchResult<'a>> {
+    pub fn run_search(&mut self) -> CLQResult<TypedGraphCliqueSearchResult<'a>> {
         let mut prior_score: f32 = -2.0;
         let mut num_repeated_prior_scores: usize = 0;
         let mut num_steps: usize = 0;
@@ -275,7 +275,7 @@ impl<'a> Beam<'a> {
                 self.search_problem.num_to_search,
                 self.search_problem.beam_size,
             )?;
-            return Ok(BeamSearchResult {
+            return Ok(TypedGraphCliqueSearchResult {
                 top_candidate: result.0,
                 num_steps,
             });
@@ -290,7 +290,7 @@ impl<'a> Beam<'a> {
                 best_score = score;
             }
         }
-        Ok(BeamSearchResult {
+        Ok(TypedGraphCliqueSearchResult {
             top_candidate: best_candidate,
             num_steps: 0,
         })

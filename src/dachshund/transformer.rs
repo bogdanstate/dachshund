@@ -9,7 +9,7 @@ extern crate serde_json;
 
 use clap::ArgMatches;
 
-use crate::dachshund::beam::{Beam, BeamSearchResult};
+use crate::dachshund::beam::{TypedGraphCliqueSearchBeam, TypedGraphCliqueSearchResult};
 use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::graph_builder_base::GraphBuilderBase;
@@ -79,7 +79,7 @@ impl Transformer {
     ///     This sets up the semantics related to the set of relations contained in the
     ///     typed graph. A requirement is that all relations share a "core" type, in this
     ///     case, "author".
-    ///     - `beam_size`: Beam construction parameter. The number of top candidates to
+    ///     - `beam_size`: TypedGraphCliqueSearchBeam construction parameter. The number of top candidates to
     ///     maintain as potential future cores for expansion in the "beam" (i.e., the list of top candidates).
     ///     - `alpha`: `Scorer` constructor parameter. Controls the contribution of density
     ///     - `global_thresh`: `Scorer` constructor parameter. If provided, candidates must be at
@@ -186,8 +186,8 @@ impl Transformer {
         clique_rows: &'a Vec<CliqueRow>,
         graph_id: GraphId,
         verbose: bool,
-    ) -> CLQResult<BeamSearchResult<'a>> {
-        let mut beam = Beam::new(
+    ) -> CLQResult<TypedGraphCliqueSearchResult<'a>> {
+        let mut beam = TypedGraphCliqueSearchBeam::new(
             graph,
             clique_rows,
             verbose,
@@ -207,7 +207,7 @@ impl Transformer {
         graph_id: GraphId,
         verbose: bool,
         output: &Sender<(Option<String>, bool)>,
-    ) -> CLQResult<Option<BeamSearchResult<'a>>> {
+    ) -> CLQResult<Option<TypedGraphCliqueSearchResult<'a>>> {
         if graph.get_core_ids().is_empty() || graph.get_non_core_ids().unwrap().is_empty() {
             // still have to send an acknowledgement to the output channel
             // that we have actually processed this graph, otherwise

@@ -10,7 +10,7 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::rc::Rc;
 
-use lib_dachshund::dachshund::beam::Beam;
+use lib_dachshund::dachshund::beam::TypedGraphCliqueSearchBeam;
 use lib_dachshund::dachshund::candidate::Candidate;
 use lib_dachshund::dachshund::error::{CLQError, CLQResult};
 use lib_dachshund::dachshund::id_types::{GraphId, NodeId, NodeTypeId};
@@ -59,7 +59,7 @@ fn test_init_beam_with_clique_rows() -> CLQResult<()> {
         .non_core_type
         .ok_or_else(CLQError::err_none)?;
 
-    let beam = Beam::new(
+    let beam = TypedGraphCliqueSearchBeam::new(
         &graph,
         &clique_rows,
         false,
@@ -101,7 +101,7 @@ fn test_init_beam_with_partially_overlapping_clique_rows() -> CLQResult<()> {
         CliqueRow::new(graph_id, 7, Some(article_type)),
     ];
     let graph: TypedGraph = transformer.build_pruned_graph(graph_id, rows)?;
-    let beam = Beam::new(
+    let beam = TypedGraphCliqueSearchBeam::new(
         &graph,
         &clique_rows,
         false,

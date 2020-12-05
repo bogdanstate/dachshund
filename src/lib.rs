@@ -17,7 +17,7 @@ pub mod dachshund;
 
 pub use dachshund::adjacency_matrix::AdjacencyMatrix;
 pub use dachshund::algebraic_connectivity::AlgebraicConnectivity;
-pub use dachshund::beam::Beam;
+pub use dachshund::beam::TypedGraphCliqueSearchBeam;
 pub use dachshund::betweenness::Betweenness;
 pub use dachshund::brokerage::Brokerage;
 pub use dachshund::candidate::Candidate;
