@@ -43,7 +43,7 @@ where
     pub graph: &'a TGraph,
     pub search_problem: Rc<SearchProblem>,
     verbose: bool,
-    non_core_types: &'a [String],
+    non_core_types: Vec<String>,
     visited_candidates: HashSet<u64>,
     scorer: Scorer,
 }
@@ -92,7 +92,7 @@ impl<'a, TGraph: GraphBase<NodeType = Node>> Beam<'a, TGraph> {
         graph: &'a TGraph,
         clique_rows: &'a Vec<CliqueRow>,
         verbose: bool,
-        non_core_types: &'a [String],
+        non_core_types: Vec<String>,
         num_non_core_types: usize,
         search_problem: Rc<SearchProblem>,
         graph_id: GraphId,
@@ -167,7 +167,7 @@ impl<'a, TGraph: GraphBase<NodeType = Node>> Beam<'a, TGraph> {
                         Err(_) => "No score".to_string(),
                     },
                     candidate,
-                    candidate.to_printable_row(self.non_core_types)?,
+                    candidate.to_printable_row(&self.non_core_types)?,
                 );
             }
             if !self
@@ -189,7 +189,7 @@ impl<'a, TGraph: GraphBase<NodeType = Node>> Beam<'a, TGraph> {
                         eprintln!(
                             "(score = {}): {}",
                             ell.get_score()?,
-                            ell.to_printable_row(self.non_core_types)?,
+                            ell.to_printable_row(&self.non_core_types)?,
                         );
                     }
                     scored_expansion_candidates.insert(ell);
@@ -259,7 +259,7 @@ impl<'a, TGraph: GraphBase<NodeType = Node>> Beam<'a, TGraph> {
                     eprintln!(
                         "Top candidate found: (score = {}): {}",
                         score,
-                        top.to_printable_row(self.non_core_types)?,
+                        top.to_printable_row(&self.non_core_types)?,
                     );
                 }
                 assert!(score >= prior_score);

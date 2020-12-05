@@ -12,11 +12,14 @@ use lib_dachshund::dachshund::id_types::{GraphId, NodeId};
 use lib_dachshund::dachshund::test_utils::{
     assert_nodes_have_ids, gen_test_transformer, process_raw_vector,
 };
+use lib_dachshund::dachshund::search_problem::SearchProblem;
 use lib_dachshund::dachshund::transformer::Transformer;
 use lib_dachshund::dachshund::typed_graph::TypedGraph;
 use lib_dachshund::dachshund::typed_graph_builder::TypedGraphBuilder;
+use lib_dachshund::dachshund::typed_graph_schema::TypedGraphSchema;
 use std::collections::HashSet;
 use std::sync::mpsc::channel;
+use std::rc::Rc;
 
 pub fn gen_test_typespec() -> Vec<Vec<String>> {
     return vec![
@@ -134,9 +137,7 @@ fn test_full_prune_small_clique() -> CLQResult<()> {
 
     // with pruning at degree < 3
     let (sender_prune, _receiver_prune) = channel();
-
-    let transformer_prune = Transformer::new(
-        ts.clone(),
+    let search_problem = Rc::new(SearchProblem::new(
         20,
         1.0,
         Some(1.0),
@@ -144,9 +145,14 @@ fn test_full_prune_small_clique() -> CLQResult<()> {
         20,
         10000,
         3,
-        false,
         3,
-        "author".into(),
+    ));
+    let schema = Rc::new(TypedGraphSchema::new(ts.clone(), "author".into())?);
+    
+    let transformer_prune = Transformer::new(
+        schema,
+        search_problem,
+        true,
         false,
     )?;
     let rows_prune = process_raw_vector(&transformer_prune, raw.clone())?;
@@ -163,8 +169,7 @@ fn test_full_prune_small_clique() -> CLQResult<()> {
 
     // without any pruning
     let (sender, _receiver) = channel();
-    let transformer = Transformer::new(
-        ts,
+    let search_problem = Rc::new(SearchProblem::new(
         20,
         1.0,
         Some(1.0),
@@ -172,9 +177,14 @@ fn test_full_prune_small_clique() -> CLQResult<()> {
         20,
         10000,
         3,
-        false,
         0,
-        "author".into(),
+    ));
+    let schema = Rc::new(TypedGraphSchema::new(ts, "author".into())?);
+    
+    let transformer = Transformer::new(
+        schema,
+        search_problem,
+        true,
         false,
     )?;
     let rows = process_raw_vector(&transformer, raw)?;

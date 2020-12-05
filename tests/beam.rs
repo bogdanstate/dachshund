@@ -8,6 +8,7 @@ extern crate lib_dachshund;
 
 use rand::seq::SliceRandom;
 use rand::thread_rng;
+use std::rc::Rc;
 
 use lib_dachshund::dachshund::beam::Beam;
 use lib_dachshund::dachshund::candidate::Candidate;
@@ -20,9 +21,11 @@ use lib_dachshund::dachshund::row::EdgeRow;
 use lib_dachshund::dachshund::test_utils::{
     assert_nodes_have_ids, gen_test_transformer, process_raw_vector,
 };
+use lib_dachshund::dachshund::search_problem::SearchProblem;
 use lib_dachshund::dachshund::transformer::Transformer;
 use lib_dachshund::dachshund::transformer_base::TransformerBase;
 use lib_dachshund::dachshund::typed_graph::TypedGraph;
+use lib_dachshund::dachshund::typed_graph_schema::TypedGraphSchema;
 
 #[cfg(test)]
 #[test]
@@ -42,8 +45,8 @@ fn test_init_beam_with_clique_rows() -> CLQResult<()> {
     let graph_id: GraphId = 0.into();
     let transformer: Transformer = gen_test_transformer(typespec, "author".to_string())?;
     let rows: Vec<EdgeRow> = process_raw_vector(&transformer, raw)?;
-    let target_type_ids = &transformer.non_core_type_ids;
-    let article_type: NodeTypeId = *target_type_ids.require("article")?;
+    let article_type: NodeTypeId =
+    *transformer.schema.get_node_type_id("article".to_string())?;
     assert_eq!(article_type.value(), 1);
     let clique_rows: Vec<CliqueRow> = vec![
         CliqueRow::new(graph_id, 1, None),
@@ -60,7 +63,7 @@ fn test_init_beam_with_clique_rows() -> CLQResult<()> {
         &graph,
         &clique_rows,
         false,
-        &target_types,
+        target_types,
         1,
         transformer.search_problem.clone(),
         graph_id,
@@ -89,8 +92,7 @@ fn test_init_beam_with_partially_overlapping_clique_rows() -> CLQResult<()> {
 
     let transformer: Transformer = gen_test_transformer(typespec, "author".to_string())?;
     let rows: Vec<EdgeRow> = process_raw_vector(&transformer, raw)?;
-    let target_type_ids = &transformer.non_core_type_ids;
-    let article_type: NodeTypeId = *target_type_ids.require("article")?;
+    let article_type: NodeTypeId = *transformer.schema.get_node_type_id("article".to_string())?;
     let clique_rows: Vec<CliqueRow> = vec![
         CliqueRow::new(graph_id, 1, None),
         CliqueRow::new(graph_id, 8, None),
@@ -103,7 +105,7 @@ fn test_init_beam_with_partially_overlapping_clique_rows() -> CLQResult<()> {
         &graph,
         &clique_rows,
         false,
-        &target_types,
+        target_types,
         1,
         transformer.search_problem.clone(),
         graph_id,
@@ -140,8 +142,7 @@ fn test_init_beam_with_clique_rows_input() -> CLQResult<()> {
             "0\t4\tarticle".into(),
         ];
         // transformer with no epochs
-        let mut transformer = Transformer::new(
-            typespec,
+        let search_problem = Rc::new(SearchProblem::new(
             20,
             1.0,
             Some(0.5),
@@ -149,9 +150,13 @@ fn test_init_beam_with_clique_rows_input() -> CLQResult<()> {
             20,
             0,
             3,
+            10,
+        ));
+        let schema = Rc::new(TypedGraphSchema::new(typespec, "author".into())?); 
+        let mut transformer = Transformer::new(
+            schema,
+            search_problem,
             true,
-            0,
-            "author".to_string(),
             true,
         )?;
         let text = raw.join("\n");
@@ -191,20 +196,22 @@ fn test_init_beam_with_clique_rows_input_one_epoch() -> CLQResult<()> {
         "0\t3\tarticle".into(),
         "0\t4\tarticle".into(),
     ];
-    // transformer with no epochs
-    let mut transformer = Transformer::new(
-        typespec,
+    // one epoch rather than 0
+    let search_problem = Rc::new(SearchProblem::new(
         20,
         1.0,
         Some(0.5),
         Some(0.5),
         20,
-        // one epoch rather than 0
         1,
         3,
+        10,
+    ));
+    let schema = Rc::new(TypedGraphSchema::new(typespec, "author".into())?); 
+    let mut transformer = Transformer::new(
+        schema,
+        search_problem,
         true,
-        0,
-        "author".to_string(),
         true,
     )?;
     let text = raw.join("\n");
@@ -234,9 +241,7 @@ fn test_beam_with_empty_graph_after_pruning() -> CLQResult<()> {
         "0\t3\tarticle\t\t\t".into(),
         "0\t4\tarticle\t\t\t".into(),
     ];
-    // transformer with no epochs
-    let mut transformer = Transformer::new(
-        typespec,
+    let search_problem = Rc::new(SearchProblem::new(
         20,
         1.0,
         Some(0.5),
@@ -244,10 +249,13 @@ fn test_beam_with_empty_graph_after_pruning() -> CLQResult<()> {
         20,
         100,
         3,
-        true,
-        // min degree of 10, should remove all nodes
         10,
-        "author".to_string(),
+    ));
+    let schema = Rc::new(TypedGraphSchema::new(typespec, "author".into())?); 
+    let mut transformer = Transformer::new(
+        schema,
+        search_problem,
+        true,
         true,
     )?;
     let text = raw.join("\n");

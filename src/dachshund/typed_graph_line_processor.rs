@@ -7,22 +7,19 @@
 extern crate clap;
 extern crate serde_json;
 
-use crate::dachshund::error::{CLQError, CLQResult};
+use crate::dachshund::error::CLQResult;
 use crate::dachshund::id_types::{EdgeTypeId, GraphId, NodeId, NodeTypeId};
 use crate::dachshund::line_processor::LineProcessorBase;
-use crate::dachshund::non_core_type_ids::NonCoreTypeIds;
 use crate::dachshund::row::Row;
 use crate::dachshund::row::{CliqueRow, EdgeRow};
+use crate::dachshund::typed_graph_schema::TypedGraphSchema;
 use std::rc::Rc;
 
 /// Processing lines for typed graphs
 /// Can mutate ids and reverse_ids maps that keep track of
 /// graph_ids seen so far.
 pub struct TypedGraphLineProcessor {
-    pub core_type: String,
-    pub non_core_type_ids: Rc<NonCoreTypeIds>,
-    pub non_core_types: Rc<Vec<String>>,
-    pub edge_types: Rc<Vec<String>>,
+    schema: Rc<TypedGraphSchema>,
 }
 impl LineProcessorBase for TypedGraphLineProcessor {
     /// processes a line of (tab-separated) input, of the form:
@@ -48,14 +45,11 @@ impl LineProcessorBase for TypedGraphLineProcessor {
             let non_core_id: NodeId = vec[2].parse::<i64>()?.into();
             let edge_type: &str = vec[4].trim_end();
             let non_core_type: &str = vec[5].trim_end();
-            let non_core_type_id: NodeTypeId = *self.non_core_type_ids.require(non_core_type)?;
-            let edge_type_id: EdgeTypeId = self
-                .edge_types
-                .iter()
-                .position(|r| r == edge_type)
-                .ok_or_else(CLQError::err_none)?
-                .into();
-            let core_type_id: NodeTypeId = *self.non_core_type_ids.require(&self.core_type)?;
+            let non_core_type_id: NodeTypeId =
+                *self.schema.get_node_type_id(non_core_type.to_string())?;
+            let edge_type_id: EdgeTypeId = *self.schema.get_edge_type_id(edge_type.to_string())?;
+
+            let core_type_id: NodeTypeId = *self.schema.get_core_type_id()?;
             return Ok(Box::new(EdgeRow {
                 graph_id,
                 source_id: core_id,
@@ -69,10 +63,11 @@ impl LineProcessorBase for TypedGraphLineProcessor {
         let node_id: NodeId = vec[1].parse::<i64>()?.into();
         let node_type: &str = vec[2].trim_end();
         let non_core_type: Option<NodeTypeId>;
-        if node_type == self.core_type {
+        if node_type == self.schema.get_core_type() {
             non_core_type = None;
         } else {
-            let non_core_type_id: NodeTypeId = *self.non_core_type_ids.require(node_type)?;
+            let non_core_type_id: NodeTypeId =
+                *self.schema.get_node_type_id(node_type.to_string())?;
             non_core_type = Some(non_core_type_id);
         }
         Ok(Box::new(CliqueRow {
@@ -83,17 +78,7 @@ impl LineProcessorBase for TypedGraphLineProcessor {
     }
 }
 impl TypedGraphLineProcessor {
-    pub fn new(
-        core_type: String,
-        non_core_type_ids: Rc<NonCoreTypeIds>,
-        non_core_types: Rc<Vec<String>>,
-        edge_types: Rc<Vec<String>>,
-    ) -> Self {
-        Self {
-            core_type,
-            non_core_type_ids,
-            non_core_types,
-            edge_types,
-        }
+    pub fn new(schema: Rc<TypedGraphSchema>) -> Self {
+        Self { schema }
     }
 }

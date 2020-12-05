@@ -6,21 +6,23 @@
  */
 use std::collections::HashSet;
 use std::fmt::Debug;
-
+use std::rc::Rc;
 use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::id_types::{GraphId, NodeId, NodeTypeId};
 use crate::dachshund::line_processor::LineProcessorBase;
 use crate::dachshund::row::EdgeRow;
+use crate::dachshund::search_problem::SearchProblem;
 use crate::dachshund::transformer::Transformer;
 use crate::dachshund::typed_graph::TypedGraph;
+use crate::dachshund::typed_graph_schema::TypedGraphSchema;
 
 pub fn gen_test_transformer(
     typespec: Vec<Vec<String>>,
     core_type: String,
 ) -> CLQResult<Transformer> {
-    let transformer: Transformer = Transformer::new(
-        typespec,
+    
+    let search_problem = Rc::new(SearchProblem::new(
         20,
         1.0,
         Some(1.0),
@@ -28,9 +30,14 @@ pub fn gen_test_transformer(
         20,
         100,
         3,
-        true,
         0,
-        core_type,
+    ));
+    let schema = Rc::new(TypedGraphSchema::new(typespec, core_type)?);
+    
+    let transformer = Transformer::new(
+        schema,
+        search_problem,
+        true,
         false,
     )?;
     Ok(transformer)

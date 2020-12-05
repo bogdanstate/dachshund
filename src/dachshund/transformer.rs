@@ -13,31 +13,26 @@ use crate::dachshund::beam::{Beam, BeamSearchResult};
 use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::graph_builder_base::GraphBuilderBase;
-use crate::dachshund::id_types::{GraphId, NodeTypeId};
+use crate::dachshund::id_types::GraphId;
 use crate::dachshund::line_processor::LineProcessorBase;
-use crate::dachshund::non_core_type_ids::NonCoreTypeIds;
 use crate::dachshund::row::{CliqueRow, EdgeRow, Row};
 use crate::dachshund::search_problem::SearchProblem;
 use crate::dachshund::transformer_base::TransformerBase;
 use crate::dachshund::typed_graph::TypedGraph;
 use crate::dachshund::typed_graph_builder::TypedGraphBuilder;
 use crate::dachshund::typed_graph_line_processor::TypedGraphLineProcessor;
+use crate::dachshund::typed_graph_schema::TypedGraphSchema;
 use std::rc::Rc;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
 
 /// Used to set up the typed graph clique mining algorithm.
 pub struct Transformer {
-    pub core_type: String,
-    pub non_core_type_ids: Rc<NonCoreTypeIds>,
-    pub non_core_types: Rc<Vec<String>>,
-    pub edge_types: Rc<Vec<String>>,
-    pub num_non_core_types: usize,
+    pub schema: Rc<TypedGraphSchema>,
     pub line_processor: Arc<TypedGraphLineProcessor>,
     pub search_problem: Rc<SearchProblem>,
     pub debug: bool,
     pub long_format: bool,
-
     edge_rows: Vec<EdgeRow>,
     clique_rows: Vec<CliqueRow>,
 }
@@ -78,34 +73,6 @@ impl TransformerBase for Transformer {
     }
 }
 impl Transformer {
-    /// processes a "typespec", a command-line argument, of the form:
-    /// [["author", "published_in", "journal"], ["author", "co-authored", "article"]].
-    /// This sets up the semantics related to the set of relations contained in the
-    /// typed graph. A requirement is that all relations share a "core" type, in this
-    /// case, "author". Non-core types must be listed in a vector, which is used to
-    /// index the non core-types. The function creates a vector of NonCoreTypeIds, which
-    /// will then be used to process input rows.
-    pub fn process_typespec(
-        typespec: Vec<Vec<String>>,
-        core_type: &str,
-        non_core_types: Vec<String>,
-    ) -> CLQResult<NonCoreTypeIds> {
-        let mut non_core_type_ids = NonCoreTypeIds::new();
-        non_core_type_ids.insert(core_type, NodeTypeId::from(0 as usize));
-
-        let should_be_only_this_core_type = &typespec[0][0].clone();
-        for (non_core_type_ix, non_core_type) in non_core_types.iter().enumerate() {
-            non_core_type_ids.insert(&non_core_type, NodeTypeId::from(non_core_type_ix + 1));
-        }
-        for item in typespec {
-            let core_type = &item[0];
-            let non_core_type = &item[2];
-            assert_eq!(core_type, should_be_only_this_core_type);
-            let non_core_type_id: &mut NodeTypeId = non_core_type_ids.require_mut(non_core_type)?;
-            non_core_type_id.increment_possible_edge_count();
-        }
-        Ok(non_core_type_ids)
-    }
     /// Called by main.rs module to set up the beam search. Parameters are as follows:
     ///     - `typespec`: a command-line argument, of the form:
     ///     [["author", "published_in", "journal"], ["author", "co-authored", "article"]].
@@ -134,55 +101,15 @@ impl Transformer {
     ///     machine-unfriendly) wide format.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        typespec: Vec<Vec<String>>,
-        beam_size: usize,
-        alpha: f32,
-        global_thresh: Option<f32>,
-        local_thresh: Option<f32>,
-        num_to_search: usize,
-        num_epochs: usize,
-        max_repeated_prior_scores: usize,
+        schema: Rc<TypedGraphSchema>,
+        search_problem: Rc<SearchProblem>,
         debug: bool,
-        min_degree: usize,
-        core_type: String,
         long_format: bool,
     ) -> CLQResult<Self> {
-        let search_problem = Rc::new(SearchProblem::new(
-            beam_size,
-            alpha,
-            global_thresh,
-            local_thresh,
-            num_to_search,
-            num_epochs,
-            max_repeated_prior_scores,
-            min_degree,
-        ));
-        let mut edge_types_v: Vec<String> = typespec.iter().map(|x| x[1].clone()).collect();
-        edge_types_v.sort();
-        let edge_types = Rc::new(edge_types_v);
 
-        let mut non_core_types_v: Vec<String> = typespec.iter().map(|x| x[2].clone()).collect();
-        non_core_types_v.sort();
-        let non_core_types = Rc::new(non_core_types_v);
-
-        let num_non_core_types: usize = non_core_types.len();
-        let non_core_type_ids: Rc<NonCoreTypeIds> = Rc::new(Transformer::process_typespec(
-            typespec,
-            &core_type,
-            non_core_types.to_vec(),
-        )?);
-        let line_processor = Arc::new(TypedGraphLineProcessor::new(
-            core_type.clone(),
-            non_core_type_ids.clone(),
-            non_core_types.clone(),
-            edge_types.clone(),
-        ));
+        let line_processor = Arc::new(TypedGraphLineProcessor::new(schema.clone()));
         let transformer = Self {
-            core_type,
-            non_core_type_ids,
-            non_core_types,
-            edge_types,
-            num_non_core_types,
+            schema,
             line_processor,
             search_problem,
             debug,
@@ -214,8 +141,8 @@ impl Transformer {
         let min_degree: usize = arg_value("min_degree")?.parse::<usize>()?;
         let core_type: String = arg_value("core_type")?.parse::<String>()?;
         let long_format: bool = arg_value("long_format")?.parse::<bool>()?;
-        let transformer = Transformer::new(
-            typespec,
+        
+        let search_problem = Rc::new(SearchProblem::new(
             beam_size,
             alpha,
             global_thresh,
@@ -223,9 +150,14 @@ impl Transformer {
             num_to_search,
             num_epochs,
             max_repeated_prior_scores,
-            debug,
             min_degree,
-            core_type,
+        ));
+        let schema = Rc::new(TypedGraphSchema::new(typespec, core_type)?);
+        
+        let transformer = Transformer::new(
+            schema,
+            search_problem,
+            debug,
             long_format,
         )?;
         Ok(transformer)
@@ -259,8 +191,8 @@ impl Transformer {
             graph,
             clique_rows,
             verbose,
-            &self.non_core_types,
-            self.num_non_core_types,
+            self.schema.get_non_core_types(),
+            self.schema.get_num_non_core_types(),
             self.search_problem.clone(),
             graph_id,
         )?;
@@ -294,14 +226,14 @@ impl Transformer {
                     graph_id.value(),
                     result
                         .top_candidate
-                        .to_printable_row(&self.non_core_types)?,
+                        .to_printable_row(&self.schema.get_non_core_types())?,
                 );
                 output.send((Some(line), false)).unwrap();
             } else {
                 result.top_candidate.print(
                     graph_id,
-                    &self.non_core_types,
-                    &self.core_type,
+                    &self.schema.get_non_core_types(),
+                    &self.schema.get_core_type(),
                     output,
                 )?;
             }
