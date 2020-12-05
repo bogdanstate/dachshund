@@ -59,7 +59,7 @@ fn test_init_beam_with_clique_rows() -> CLQResult<()> {
         .non_core_type
         .ok_or_else(CLQError::err_none)?;
 
-    let beam: Beam<TypedGraph> = Beam::new(
+    let beam = Beam::new(
         &graph,
         &clique_rows,
         false,
@@ -101,7 +101,7 @@ fn test_init_beam_with_partially_overlapping_clique_rows() -> CLQResult<()> {
         CliqueRow::new(graph_id, 7, Some(article_type)),
     ];
     let graph: TypedGraph = transformer.build_pruned_graph(graph_id, rows)?;
-    let beam: Beam<TypedGraph> = Beam::new(
+    let beam = Beam::new(
         &graph,
         &clique_rows,
         false,
@@ -150,7 +150,7 @@ fn test_init_beam_with_clique_rows_input() -> CLQResult<()> {
             20,
             0,
             3,
-            10,
+            0,
         ));
         let schema = Rc::new(TypedGraphSchema::new(typespec, "author".into())?); 
         let mut transformer = Transformer::new(
@@ -205,7 +205,7 @@ fn test_init_beam_with_clique_rows_input_one_epoch() -> CLQResult<()> {
         20,
         1,
         3,
-        10,
+        0,
     ));
     let schema = Rc::new(TypedGraphSchema::new(typespec, "author".into())?); 
     let mut transformer = Transformer::new(

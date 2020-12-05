@@ -16,31 +16,27 @@ use crate::dachshund::candidate::Candidate;
 use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::id_types::{GraphId, NodeId};
-use crate::dachshund::node::Node;
 use crate::dachshund::row::CliqueRow;
 use crate::dachshund::scorer::Scorer;
 use crate::dachshund::search_problem::SearchProblem;
+use crate::dachshund::typed_graph::TypedGraph;
 
 use std::rc::Rc;
 
 /// The result of a beam search.
-pub struct BeamSearchResult<'a, TGraph>
-where
-    TGraph: GraphBase<NodeType = Node>,
+pub struct BeamSearchResult<'a>
 {
-    pub top_candidate: Candidate<'a, TGraph>,
+    pub top_candidate: Candidate<'a, TypedGraph>,
     pub num_steps: usize,
 }
 
 /// Used for (quasi-clique) detection. A singleton object that keeps state across the beam search.
 /// At any point this object considers a "beam" of candidates that is always kept under beam_size,
 /// to avoid exponential blowup of the search space.
-pub struct Beam<'a, TGraph>
-where
-    TGraph: GraphBase<NodeType = Node>,
+pub struct Beam<'a>
 {
-    pub candidates: Vec<Candidate<'a, TGraph>>,
-    pub graph: &'a TGraph,
+    pub candidates: Vec<Candidate<'a, TypedGraph>>,
+    pub graph: &'a TypedGraph,
     pub search_problem: Rc<SearchProblem>,
     verbose: bool,
     non_core_types: Vec<String>,
@@ -48,12 +44,12 @@ where
     scorer: Scorer,
 }
 
-impl<'a, TGraph: GraphBase<NodeType = Node>> Beam<'a, TGraph> {
+impl<'a> Beam<'a> {
     /// performs a random walk of length `length` along the graph,
     /// starting at a particular node.
     fn random_walk(
         rng: &mut impl Rng,
-        graph: &TGraph,
+        graph: &TypedGraph,
         node: NodeId,
         length: i16,
     ) -> CLQResult<NodeId> {
@@ -71,7 +67,7 @@ impl<'a, TGraph: GraphBase<NodeType = Node>> Beam<'a, TGraph> {
     }
 
     /// creates new beam for mining quasi-bicliques. The following parameters are required:
-    ///     - `graph`: a reference to a `TGraph` object (typically constructed by a transformer`.
+    ///     - `graph`: a reference to a `TypedGraph` object (typically constructed by a transformer`.
     ///     - `clique_rows`: a Vector of `CliqueRow` entries, which are used to initialize the
     ///     search process with already-existing cliques.
     ///     - `beam_size`: the number of top candidates to maintain as potential future sources
@@ -89,18 +85,18 @@ impl<'a, TGraph: GraphBase<NodeType = Node>> Beam<'a, TGraph> {
     ///     - `graph_id`: uniquely identifies the graph currently being processed.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        graph: &'a TGraph,
+        graph: &'a TypedGraph,
         clique_rows: &'a Vec<CliqueRow>,
         verbose: bool,
         non_core_types: Vec<String>,
         num_non_core_types: usize,
         search_problem: Rc<SearchProblem>,
         graph_id: GraphId,
-    ) -> CLQResult<Beam<'a, TGraph>> {
+    ) -> CLQResult<Beam<'a>> {
         let core_ids: &Vec<NodeId> = &graph.get_core_ids();
         let non_core_ids: &Vec<NodeId> = &graph.get_non_core_ids().unwrap();
 
-        let mut candidates: Vec<Candidate<TGraph>> = Vec::new();
+        let mut candidates: Vec<Candidate<TypedGraph>> = Vec::new();
         let scorer: Scorer = Scorer::new(num_non_core_types, &search_problem);
 
         // To ensure deterministic behaviour between two identically configured runs,
@@ -133,7 +129,7 @@ impl<'a, TGraph: GraphBase<NodeType = Node>> Beam<'a, TGraph> {
             candidates.push(candidate);
         }
         let visited_candidates: HashSet<u64> = HashSet::new();
-        let beam: Beam<TGraph> = Beam {
+        Ok(Beam {
             candidates,
             graph,
             search_problem,
@@ -141,8 +137,7 @@ impl<'a, TGraph: GraphBase<NodeType = Node>> Beam<'a, TGraph> {
             non_core_types,
             visited_candidates,
             scorer,
-        };
-        Ok(beam)
+        })
     }
 
     /// Try expanding each member of the beam and keep the top candidates.
@@ -150,9 +145,9 @@ impl<'a, TGraph: GraphBase<NodeType = Node>> Beam<'a, TGraph> {
         &mut self,
         num_to_search: usize,
         beam_size: usize,
-    ) -> CLQResult<(Candidate<'a, TGraph>, bool)> {
-        let mut scored_expansion_candidates: HashSet<Candidate<TGraph>> = HashSet::new();
-        let mut new_candidates: Vec<Candidate<TGraph>> = Vec::new();
+    ) -> CLQResult<(Candidate<'a, TypedGraph>, bool)> {
+        let mut scored_expansion_candidates: HashSet<Candidate<TypedGraph>> = HashSet::new();
+        let mut new_candidates: Vec<Candidate<TypedGraph>> = Vec::new();
         let mut can_continue: bool = false;
         // A map from a checksum to a reference to a candidate from the previous generation.
         // Used as a hint when materializing the neighborhood for the next generation of candidates.
@@ -175,7 +170,7 @@ impl<'a, TGraph: GraphBase<NodeType = Node>> Beam<'a, TGraph> {
                 .contains(&candidate.checksum.unwrap())
             {
                 can_continue = true;
-                let v: Vec<Candidate<TGraph>> = candidate.one_step_search(
+                let v: Vec<Candidate<TypedGraph>> = candidate.one_step_search(
                     num_to_search,
                     &mut self.visited_candidates,
                     &self.scorer,
@@ -200,7 +195,7 @@ impl<'a, TGraph: GraphBase<NodeType = Node>> Beam<'a, TGraph> {
         }
 
         // sort by score, with node_id as tie breaker for deterministic behaviour
-        let mut v: Vec<Candidate<TGraph>> = scored_expansion_candidates.into_iter().collect();
+        let mut v: Vec<Candidate<TypedGraph>> = scored_expansion_candidates.into_iter().collect();
 
         let mut bad_sort = false;
         v.sort_by(|a, b| {
@@ -239,14 +234,14 @@ impl<'a, TGraph: GraphBase<NodeType = Node>> Beam<'a, TGraph> {
     /// score resulting from a one step search is repeated `max_repeated_prior_scores`
     /// times, the search is terminated early. (Note that the search has a stochastic
     /// component, which is why repeating the search may yield different results).
-    pub fn run_search(&mut self) -> CLQResult<BeamSearchResult<'a, TGraph>> {
+    pub fn run_search(&mut self) -> CLQResult<BeamSearchResult<'a>> {
         let mut prior_score: f32 = -2.0;
         let mut num_repeated_prior_scores: usize = 0;
         let mut num_steps: usize = 0;
         if self.search_problem.num_epochs > 0 {
             for i in 0..self.search_problem.num_epochs - 1 {
                 num_steps = i + 1;
-                let (top, can_continue): (Candidate<TGraph>, bool) = self.one_step_search(
+                let (top, can_continue): (Candidate<TypedGraph>, bool) = self.one_step_search(
                     self.search_problem.num_to_search,
                     self.search_problem.beam_size,
                 )?;
@@ -286,7 +281,7 @@ impl<'a, TGraph: GraphBase<NodeType = Node>> Beam<'a, TGraph> {
             });
         }
         // if we're just running for 0 epochs (for debug purposes, return top candidate)
-        let mut best_candidate: Candidate<TGraph> = self.candidates[0].replicate(true);
+        let mut best_candidate: Candidate<TypedGraph> = self.candidates[0].replicate(true);
         let mut best_score: f32 = 0.0;
         for candidate in &self.candidates {
             let score = candidate.get_score()?;
@@ -295,7 +290,7 @@ impl<'a, TGraph: GraphBase<NodeType = Node>> Beam<'a, TGraph> {
                 best_score = score;
             }
         }
-        Ok(BeamSearchResult::<TGraph> {
+        Ok(BeamSearchResult {
             top_candidate: best_candidate,
             num_steps: 0,
         })

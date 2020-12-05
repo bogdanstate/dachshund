@@ -186,8 +186,8 @@ impl Transformer {
         clique_rows: &'a Vec<CliqueRow>,
         graph_id: GraphId,
         verbose: bool,
-    ) -> CLQResult<BeamSearchResult<'a, TypedGraph>> {
-        let mut beam: Beam<TypedGraph> = Beam::new(
+    ) -> CLQResult<BeamSearchResult<'a>> {
+        let mut beam = Beam::new(
             graph,
             clique_rows,
             verbose,
@@ -207,7 +207,7 @@ impl Transformer {
         graph_id: GraphId,
         verbose: bool,
         output: &Sender<(Option<String>, bool)>,
-    ) -> CLQResult<Option<BeamSearchResult<'a, TypedGraph>>> {
+    ) -> CLQResult<Option<BeamSearchResult<'a>>> {
         if graph.get_core_ids().is_empty() || graph.get_non_core_ids().unwrap().is_empty() {
             // still have to send an acknowledgement to the output channel
             // that we have actually processed this graph, otherwise
@@ -216,8 +216,7 @@ impl Transformer {
             output.send((None, false)).unwrap();
             return Ok(None);
         }
-        let result: BeamSearchResult<TypedGraph> =
-            self.process_graph(graph, clique_rows, graph_id, verbose)?;
+        let result = self.process_graph(graph, clique_rows, graph_id, verbose)?;
         // only print if this is a conforming clique
         if result.top_candidate.get_score()? > 0.0 {
             if !self.long_format {
