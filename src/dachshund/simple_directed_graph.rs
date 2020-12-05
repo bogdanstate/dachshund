@@ -16,7 +16,7 @@ use std::collections::{HashMap, HashSet};
 pub trait DirectedGraph
 where
     Self: GraphBase,
-    <Self as GraphBase>::NodeType: DirectedNodeBase
+    <Self as GraphBase>::NodeType: DirectedNodeBase,
 {
     fn is_acyclic(&self) -> bool {
         // from https://www.cs.hmc.edu/~keller/courses/cs60/s98/examples/acyclic/

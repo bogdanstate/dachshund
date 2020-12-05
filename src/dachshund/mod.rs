@@ -18,7 +18,6 @@ pub mod coreness;
 pub mod eigenvector_centrality;
 pub mod error;
 pub mod graph_base;
-pub mod graph_builder;
 pub mod graph_builder_base;
 pub mod id_types;
 pub mod input;
