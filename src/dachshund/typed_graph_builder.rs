@@ -247,7 +247,7 @@ pub trait TypedGraphBuilderBase: GraphBuilderBase<SchemaType = TypedGraphSchema>
 }
 
 impl TypedGraphBuilderBase for TypedGraphBuilder {}
-pub struct TypedGraphBuilderWithCliques {
+pub struct TypedGraphBuilderWithCliquesOverExistingGraph {
     pub graph_id: GraphId,
     pub cliques: Vec<(BTreeSet<NodeId>, BTreeSet<NodeId>)>,
     pub core_type_id: NodeTypeId,
@@ -255,7 +255,7 @@ pub struct TypedGraphBuilderWithCliques {
     pub edge_type_map: HashMap<(NodeTypeId, NodeTypeId), Vec<EdgeTypeId>>,
     pub schema: Rc<TypedGraphSchema>,
 }
-impl TypedGraphBuilderWithCliques {
+impl TypedGraphBuilderWithCliquesOverExistingGraph {
     pub fn new(
         graph_id: GraphId,
         cliques: Vec<(BTreeSet<NodeId>, BTreeSet<NodeId>)>,
@@ -271,8 +271,8 @@ impl TypedGraphBuilderWithCliques {
         }
     }
 }
-impl TypedGraphBuilderBase for TypedGraphBuilderWithCliques {}
-impl GraphBuilderBase for TypedGraphBuilderWithCliques {
+impl TypedGraphBuilderBase for TypedGraphBuilderWithCliquesOverExistingGraph {}
+impl GraphBuilderBase for TypedGraphBuilderWithCliquesOverExistingGraph {
     type GraphType = TypedGraph;
     type RowType = EdgeRow;
     type SchemaType = TypedGraphSchema;
@@ -281,7 +281,7 @@ impl GraphBuilderBase for TypedGraphBuilderWithCliques {
         self.schema.clone()
     }
 }
-impl GraphBuilderFromVector for TypedGraphBuilderWithCliques {
+impl GraphBuilderFromVector for TypedGraphBuilderWithCliquesOverExistingGraph {
     fn from_vector(&mut self, data: Vec<EdgeRow>) -> CLQResult<TypedGraph> {
         let mut source_ids: HashSet<NodeId> = HashSet::new();
         let mut target_ids: HashSet<NodeId> = HashSet::new();
@@ -309,7 +309,7 @@ impl GraphBuilderFromVector for TypedGraphBuilderWithCliques {
 }
 
 // TODO: should be unified with SimpleUndirectedGraphBuilderWithCliques
-impl GraphBuilderBaseWithPreProcessing for TypedGraphBuilderWithCliques {
+impl GraphBuilderBaseWithPreProcessing for TypedGraphBuilderWithCliquesOverExistingGraph {
     fn pre_process_rows(
         &mut self,
         data: Vec<<Self as GraphBuilderBase>::RowType>,
@@ -341,7 +341,7 @@ impl GraphBuilderBaseWithPreProcessing for TypedGraphBuilderWithCliques {
         Ok(rows_with_cliques)
     }
 }
-impl GraphBuilderBaseWithCliques for TypedGraphBuilderWithCliques {
+impl GraphBuilderBaseWithCliques for TypedGraphBuilderWithCliquesOverExistingGraph {
     type CliquesType = (BTreeSet<NodeId>, BTreeSet<NodeId>);
 
     fn get_clique_edges(&self, id1: NodeId, id2: NodeId) -> CLQResult<Vec<EdgeRow>> {

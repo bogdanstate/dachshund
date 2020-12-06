@@ -17,7 +17,7 @@ use lib_dachshund::dachshund::line_processor::LineProcessorBase;
 use lib_dachshund::dachshund::row::EdgeRow;
 use lib_dachshund::dachshund::search_problem::SearchProblem;
 use lib_dachshund::dachshund::typed_graph::TypedGraph;
-use lib_dachshund::dachshund::typed_graph_builder::TypedGraphBuilderWithCliques;
+use lib_dachshund::dachshund::typed_graph_builder::TypedGraphBuilderWithCliquesOverExistingGraph;
 use lib_dachshund::dachshund::typed_graph_line_processor::TypedGraphLineProcessor;
 use lib_dachshund::dachshund::typed_graph_schema::TypedGraphSchema;
 
@@ -28,8 +28,8 @@ fn get_builder_with_cliques(
     graph_id: GraphId,
     cliques: &Vec<(Vec<i64>, Vec<i64>)>,
     schema: Rc<TypedGraphSchema>,
-) -> TypedGraphBuilderWithCliques {
-    TypedGraphBuilderWithCliques::new(
+) -> TypedGraphBuilderWithCliquesOverExistingGraph {
+    TypedGraphBuilderWithCliquesOverExistingGraph::new(
         graph_id,
         cliques
             .into_iter()
@@ -67,7 +67,7 @@ fn get_seeded_rows(
     let num_original_rows = raw.len();
     let rows = raw_to_edge_row(&line_processor, raw);
     let mut builder_no_cliques =
-        TypedGraphBuilderWithCliques::new(graph_id, Vec::new(), schema.clone());
+        TypedGraphBuilderWithCliquesOverExistingGraph::new(graph_id, Vec::new(), schema.clone());
     let mut builder_with_cliques = get_builder_with_cliques(graph_id, cliques, schema);
     let processed_rows = builder_no_cliques.pre_process_rows(rows.clone())?;
     assert_eq!(processed_rows.len(), num_original_rows);
