@@ -21,6 +21,7 @@ use crate::dachshund::laplacian::Laplacian;
 use crate::dachshund::node::{NodeBase, NodeEdgeBase, SimpleNode};
 use crate::dachshund::shortest_paths::ShortestPaths;
 use crate::dachshund::transitivity::Transitivity;
+use crate::dachshund::simple_graph::SimpleGraph;
 use std::collections::hash_map::{Keys, Values};
 use std::collections::HashMap;
 
@@ -34,6 +35,8 @@ pub struct SimpleUndirectedGraph {
     pub nodes: HashMap<NodeId, SimpleNode>,
     pub ids: Vec<NodeId>,
 }
+impl UndirectedGraph for SimpleUndirectedGraph {}
+impl SimpleGraph for SimpleUndirectedGraph {}
 impl GraphBase for SimpleUndirectedGraph {
     type NodeType = SimpleNode;
     type SchemaType = SimpleGraphSchema;
@@ -99,8 +102,6 @@ impl SimpleUndirectedGraph {
         self.nodes[&id].degree()
     }
 }
-impl UndirectedGraph for SimpleUndirectedGraph {}
-
 impl CNMCommunities for SimpleUndirectedGraph {}
 impl ConnectedComponents for SimpleUndirectedGraph {}
 impl ConnectedComponentsUndirected for SimpleUndirectedGraph {}

@@ -11,6 +11,7 @@ use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::graph_schema::SimpleGraphSchema;
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::node::{DirectedNodeBase, NodeBase, SimpleDirectedNode};
+use crate::dachshund::simple_graph::SimpleGraph;
 use std::collections::hash_map::{Keys, Values};
 use std::collections::{HashMap, HashSet};
 
@@ -43,6 +44,8 @@ pub struct SimpleDirectedGraph {
     pub nodes: HashMap<NodeId, SimpleDirectedNode>,
     pub ids: Vec<NodeId>,
 }
+impl DirectedGraph for SimpleDirectedGraph {}
+impl SimpleGraph for SimpleDirectedGraph {}
 impl GraphBase for SimpleDirectedGraph {
     type NodeType = SimpleDirectedNode;
     type SchemaType = SimpleGraphSchema;
@@ -88,7 +91,7 @@ impl GraphBase for SimpleDirectedGraph {
         }
     }
 }
-impl DirectedGraph for SimpleDirectedGraph {}
+
 impl Brokerage for SimpleDirectedGraph {}
 impl ConnectedComponents for SimpleDirectedGraph {}
 impl ConnectedComponentsDirected for SimpleDirectedGraph {}
