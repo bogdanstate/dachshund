@@ -81,11 +81,11 @@ impl<'a> TypedGraphCliqueSearchBeam<'a> {
     ///     for the candidate to be considered valid.
     ///     - `graph_id`: uniquely identifies the graph currently being processed.
     pub fn new(
+        search_problem: Rc<SearchProblem>,
+        graph_id: GraphId,
         graph: &'a TypedGraph,
         clique_rows: &'a Vec<CliqueRow>,
         verbose: bool,
-        search_problem: Rc<SearchProblem>,
-        graph_id: GraphId,
     ) -> CLQResult<TypedGraphCliqueSearchBeam<'a>> {
         let core_ids: &Vec<NodeId> = &graph.get_core_ids();
         let non_core_ids: &Vec<NodeId> = &graph.get_non_core_ids().unwrap();

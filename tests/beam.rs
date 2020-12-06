@@ -58,11 +58,11 @@ fn test_init_beam_with_clique_rows() -> CLQResult<()> {
         .ok_or_else(CLQError::err_none)?;
 
     let beam = TypedGraphCliqueSearchBeam::new(
+        transformer.search_problem.clone(),
+        graph_id,
         &graph,
         &clique_rows,
         false,
-        transformer.search_problem.clone(),
-        graph_id,
     )?;
     let init_candidate: &Candidate<TypedGraph> = &beam.candidates[0];
     assert_nodes_have_ids(&graph, &init_candidate.core_ids, vec![1], true);
@@ -97,11 +97,11 @@ fn test_init_beam_with_partially_overlapping_clique_rows() -> CLQResult<()> {
     ];
     let graph: TypedGraph = transformer.build_pruned_graph(graph_id, rows)?;
     let beam = TypedGraphCliqueSearchBeam::new(
+        transformer.search_problem.clone(),
+        graph_id,
         &graph,
         &clique_rows,
         false,
-        transformer.search_problem.clone(),
-        graph_id,
     )?;
     let init_candidate: &Candidate<TypedGraph> = &beam.candidates[0];
     assert_nodes_have_ids(&graph, &init_candidate.core_ids, vec![1], true);
