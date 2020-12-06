@@ -245,8 +245,8 @@ pub trait TypedGraphBuilderBase: GraphBuilderBase<SchemaType = TypedGraphSchema>
         (filtered_source_ids, filtered_target_ids, filtered_rows)
     }
 }
-impl TypedGraphBuilderBase for TypedGraphBuilder {}
 
+impl TypedGraphBuilderBase for TypedGraphBuilder {}
 pub struct TypedGraphBuilderWithCliques {
     pub graph_id: GraphId,
     pub cliques: Vec<(BTreeSet<NodeId>, BTreeSet<NodeId>)>,

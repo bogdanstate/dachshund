@@ -53,3 +53,7 @@ pub trait GraphBuilderFromVector: GraphBuilderBase {
         data: Vec<<Self as GraphBuilderBase>::RowType>,
     ) -> CLQResult<<Self as GraphBuilderBase>::GraphType>;
 }
+
+pub trait GraphBuilderWithRandomEdges: GraphBuilderBase {
+    fn get_random_edge(&mut self) -> CLQResult<<Self as GraphBuilderBase>::RowType>;
+}
