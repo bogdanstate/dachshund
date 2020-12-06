@@ -10,6 +10,7 @@ use lib_dachshund::dachshund::error::{CLQError, CLQResult};
 use lib_dachshund::dachshund::graph_builder_base::GraphBuilderBaseWithPreProcessing;
 use lib_dachshund::dachshund::id_types::{GraphId, NodeId};
 use lib_dachshund::dachshund::line_processor::LineProcessorBase;
+use lib_dachshund::dachshund::row::EdgeRow;
 use lib_dachshund::dachshund::typed_graph_builder::TypedGraphBuilderWithCliques;
 use lib_dachshund::dachshund::typed_graph_line_processor::TypedGraphLineProcessor;
 use lib_dachshund::dachshund::typed_graph_schema::TypedGraphSchema;
@@ -17,21 +18,11 @@ use lib_dachshund::dachshund::typed_graph_schema::TypedGraphSchema;
 use std::collections::BTreeSet;
 use std::rc::Rc;
 
-#[cfg(test)]
-#[test]
-fn test_typed_graph_seeding() -> CLQResult<()> {
-    let typespec = vec![
-        vec!["author".to_string(), "published".into(), "article".into()],
-        vec!["author".to_string(), "cited".into(), "article".into()],
-        vec!["author".to_string(), "published".into(), "book".into()],
-    ];
-    let raw = vec![
-        "0\t1\t5\tauthor\tpublished\tarticle".to_string(),
-        "0\t2\t6\tauthor\tpublished\tarticle".into(),
-        "0\t3\t7\tauthor\tpublished\tarticle".into(),
-        "0\t4\t8\tauthor\tcited\tarticle".into(),
-    ];
-    let schema = Rc::new(TypedGraphSchema::new(typespec, "author".to_string())?);
+fn get_seeded_rows(
+    schema: Rc<TypedGraphSchema>,
+    raw: Vec<String>,
+    cliques: Vec<(Vec<i64>, Vec<i64>)>,
+) -> CLQResult<BTreeSet<EdgeRow>> {
     let line_processor = TypedGraphLineProcessor::new(schema.clone());
     let rows = raw
         .iter()
@@ -51,22 +42,41 @@ fn test_typed_graph_seeding() -> CLQResult<()> {
     assert_eq!(processed_rows.len(), raw.len());
     let mut builder_with_cliques = TypedGraphBuilderWithCliques::new(
         graph_id,
-        vec![(
-            vec![1 as i64, 2 as i64, 3 as i64]
-                .into_iter()
-                .map(|x| NodeId::from(x))
-                .collect::<BTreeSet<_>>(),
-            vec![5 as i64, 6 as i64, 7 as i64]
-                .into_iter()
-                .map(|x| NodeId::from(x))
-                .collect::<BTreeSet<_>>(),
-        )],
+        cliques
+            .into_iter()
+            .map(|(x1, x2)| {
+                (
+                    x1.into_iter().map(|x| NodeId::from(x)).collect(),
+                    x2.into_iter().map(|x| NodeId::from(x)).collect(),
+                )
+            })
+            .collect(),
         schema,
     );
     let processed_rows = builder_with_cliques
         .pre_process_rows(rows)?
         .into_iter()
         .collect::<BTreeSet<_>>();
-    assert_eq!(processed_rows.len(), raw.len() + 9 * 2 - 3);
+    Ok(processed_rows)
+}
+
+#[cfg(test)]
+#[test]
+fn test_typed_graph_seeding() -> CLQResult<()> {
+    let typespec = vec![
+        vec!["author".to_string(), "published".into(), "article".into()],
+        vec!["author".to_string(), "cited".into(), "article".into()],
+        vec!["author".to_string(), "published".into(), "book".into()],
+    ];
+    let raw = vec![
+        "0\t1\t5\tauthor\tpublished\tarticle".to_string(),
+        "0\t2\t6\tauthor\tpublished\tarticle".into(),
+        "0\t3\t7\tauthor\tpublished\tarticle".into(),
+        "0\t4\t8\tauthor\tcited\tarticle".into(),
+    ];
+    let num_original_rows = raw.len();
+    let schema = Rc::new(TypedGraphSchema::new(typespec, "author".to_string())?);
+    let processed_rows = get_seeded_rows(schema, raw, vec![(vec![1, 2, 3], vec![5, 6, 7])])?;
+    assert_eq!(processed_rows.len(), num_original_rows + 9 * 2 - 3);
     Ok(())
 }
