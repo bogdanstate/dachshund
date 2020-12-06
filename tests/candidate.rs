@@ -26,7 +26,7 @@ use std::rc::Rc;
 fn test_output_simple_candidate() -> CLQResult<()> {
     let node_id = NodeId::from(0);
     let node: Node = Node::new(node_id, true, None, Vec::new(), HashMap::new());
-    
+
     let schema = Rc::new(TypedGraphSchema::empty());
     let mut graph: TypedGraph = TypedGraph {
         nodes: HashMap::new(),

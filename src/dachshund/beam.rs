@@ -80,7 +80,6 @@ impl<'a> TypedGraphCliqueSearchBeam<'a> {
     ///     must have at least `local_thresh` proportion of ties to other nodes in the candidate,
     ///     for the candidate to be considered valid.
     ///     - `graph_id`: uniquely identifies the graph currently being processed.
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         graph: &'a TypedGraph,
         clique_rows: &'a Vec<CliqueRow>,
