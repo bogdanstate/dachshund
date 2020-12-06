@@ -7,11 +7,8 @@
 use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::graph_builder_base::{
-    GraphBuilderBase,
-    GraphBuilderBaseWithGeneratedCliques,
-    GraphBuilderBaseWithKnownCliques,
-    GraphBuilderBaseWithPreProcessing,
-    GraphBuilderFromVector,
+    GraphBuilderBase, GraphBuilderBaseWithGeneratedCliques, GraphBuilderBaseWithKnownCliques,
+    GraphBuilderBaseWithPreProcessing, GraphBuilderFromVector,
 };
 use crate::dachshund::id_types::{EdgeTypeId, GraphId, NodeId, NodeTypeId};
 use crate::dachshund::node::NodeBase;
@@ -20,6 +17,7 @@ use crate::dachshund::row::EdgeRow;
 use crate::dachshund::typed_graph::TypedGraph;
 use crate::dachshund::typed_graph_schema::TypedGraphSchema;
 use std::collections::{BTreeSet, HashMap, HashSet};
+use std::hash::Hash;
 use std::rc::Rc;
 
 pub struct TypedGraphBuilder {
@@ -344,11 +342,11 @@ impl GraphBuilderBaseWithPreProcessing for TypedGraphBuilderWithCliquesOverExist
     }
 }
 
-trait TypedGraphBuilderWithCliques {
+pub trait TypedGraphBuilderWithCliques {
     fn get_non_core_type_map(&self) -> &HashMap<NodeId, NodeTypeId>;
     fn get_edge_type_map(&self) -> &HashMap<(NodeTypeId, NodeTypeId), Vec<EdgeTypeId>>;
+    fn get_graph_id(&self) -> GraphId;
 }
-
 impl TypedGraphBuilderWithCliques for TypedGraphBuilderWithCliquesOverExistingGraph {
     fn get_non_core_type_map(&self) -> &HashMap<NodeId, NodeTypeId> {
         &self.non_core_type_map
@@ -356,9 +354,20 @@ impl TypedGraphBuilderWithCliques for TypedGraphBuilderWithCliquesOverExistingGr
     fn get_edge_type_map(&self) -> &HashMap<(NodeTypeId, NodeTypeId), Vec<EdgeTypeId>> {
         &self.edge_type_map
     }
+    fn get_graph_id(&self) -> GraphId {
+        self.graph_id.clone()
+    }
 }
-
-impl GraphBuilderBaseWithGeneratedCliques for TypedGraphBuilderWithCliquesOverExistingGraph {
+impl<
+        T: TypedGraphBuilderWithCliques
+            + GraphBuilderBaseWithPreProcessing
+            + GraphBuilderBase<SchemaType = TypedGraphSchema>
+            + GraphBuilderBase<RowType = EdgeRow>,
+    > GraphBuilderBaseWithGeneratedCliques for T
+where
+    <T as GraphBuilderBase>::RowType: Eq,
+    <T as GraphBuilderBase>::RowType: Hash,
+{
     fn get_clique_edges(&self, id1: NodeId, id2: NodeId) -> CLQResult<Vec<EdgeRow>> {
         let source_type_id = self.get_schema().get_core_type_id()?.clone();
         let target_type_id = self
@@ -377,10 +386,10 @@ impl GraphBuilderBaseWithGeneratedCliques for TypedGraphBuilderWithCliquesOverEx
             .iter()
             .cloned()
             .map(|edge_type_id| EdgeRow {
-                graph_id: self.graph_id.clone(),
+                graph_id: self.get_graph_id().clone(),
                 source_id: id1,
                 target_id: id2,
-                source_type_id: self.core_type_id.clone(),
+                source_type_id: source_type_id.clone(),
                 target_type_id,
                 edge_type_id,
             })

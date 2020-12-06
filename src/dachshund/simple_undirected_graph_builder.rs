@@ -6,11 +6,8 @@
  */
 use crate::dachshund::error::CLQResult;
 use crate::dachshund::graph_builder_base::{
-    GraphBuilderBase,
-    GraphBuilderBaseWithGeneratedCliques,
-    GraphBuilderBaseWithKnownCliques,
-    GraphBuilderBaseWithPreProcessing,
-    GraphBuilderFromVector,
+    GraphBuilderBase, GraphBuilderBaseWithGeneratedCliques, GraphBuilderBaseWithKnownCliques,
+    GraphBuilderBaseWithPreProcessing, GraphBuilderFromVector,
 };
 use crate::dachshund::graph_schema::SimpleGraphSchema;
 use crate::dachshund::id_types::NodeId;

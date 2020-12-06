@@ -36,7 +36,7 @@ pub trait GraphBuilderBaseWithGeneratedCliques: GraphBuilderBaseWithPreProcessin
 where
     <Self as GraphBuilderBase>::RowType: Eq,
     <Self as GraphBuilderBase>::RowType: Hash,
-    Self: GraphBuilderBase
+    Self: GraphBuilderBase,
 {
     fn get_clique_edges(
         &self,
