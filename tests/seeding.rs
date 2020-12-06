@@ -6,6 +6,7 @@
  */
 extern crate lib_dachshund;
 
+use lib_dachshund::dachshund::beam::TypedGraphCliqueSearchBeam;
 use lib_dachshund::dachshund::error::{CLQError, CLQResult};
 use lib_dachshund::dachshund::graph_base::GraphBase;
 use lib_dachshund::dachshund::graph_builder_base::{
@@ -14,6 +15,7 @@ use lib_dachshund::dachshund::graph_builder_base::{
 use lib_dachshund::dachshund::id_types::{GraphId, NodeId};
 use lib_dachshund::dachshund::line_processor::LineProcessorBase;
 use lib_dachshund::dachshund::row::EdgeRow;
+use lib_dachshund::dachshund::search_problem::SearchProblem;
 use lib_dachshund::dachshund::typed_graph::TypedGraph;
 use lib_dachshund::dachshund::typed_graph_builder::TypedGraphBuilderWithCliques;
 use lib_dachshund::dachshund::typed_graph_line_processor::TypedGraphLineProcessor;
@@ -128,20 +130,51 @@ fn test_typed_graph_seeding_two_cliques() -> CLQResult<()> {
         "0\t1\t9\tauthor\tpublished\tbook".into(),
         "0\t1\t10\tauthor\tpublished\tarticle".into(),
         "0\t1\t11\tauthor\tpublished\tarticle".into(),
+        "0\t12\t5\tauthor\tpublished\tarticle".into(),
+        "0\t13\t5\tauthor\tcited\tarticle".into(),
     ];
     let num_original_rows = raw.len();
     let schema = Rc::new(TypedGraphSchema::new(typespec, "author".to_string())?);
     let cliques = vec![
         (vec![1, 2, 3], vec![5, 6, 7]),
-        (vec![3, 4], vec![9, 10, 11]),
+        (vec![12, 13], vec![8, 10, 11]),
     ];
     let processed_rows = get_seeded_rows(GraphId::from(0), schema.clone(), &raw, &cliques)?;
-    assert_eq!(
-        processed_rows.len(),
-        num_original_rows + 9 * 2 - 3 + 2 + 4 * 2
-    );
+    assert_eq!(processed_rows.len(), num_original_rows + 9 * 2 - 3 + 6 * 2);
 
     let graph = get_seeded_graph(GraphId::from(0), schema, &raw, &cliques)?;
     assert_eq!(graph.count_edges() / 2, processed_rows.len());
+
+    let search_problem = Rc::new(SearchProblem::new(
+        2000,
+        1.0,
+        Some(1.0),
+        Some(1.0),
+        2000,
+        10,
+        10,
+        0,
+    ));
+    let clique_rows = Vec::new();
+    let mut beam = TypedGraphCliqueSearchBeam::new(
+        search_problem,
+        GraphId::from(0),
+        &graph,
+        &clique_rows,
+        false,
+    )?;
+    let best = beam.run_search()?;
+    print!("{:?}", best.top_candidate.core_ids);
+    print!("{:?}", best.top_candidate.non_core_ids);
+    assert_eq!(best.top_candidate.non_core_ids.len(), 3);
+    assert_eq!(best.top_candidate.core_ids.len(), 3);
+    let _res = vec![1, 2, 3]
+        .into_iter()
+        .map(|x| assert!(best.top_candidate.core_ids.contains(&NodeId::from(x))))
+        .collect::<Vec<_>>();
+    let _res = vec![5, 6, 7]
+        .into_iter()
+        .map(|x| assert!(best.top_candidate.non_core_ids.contains(&NodeId::from(x))))
+        .collect::<Vec<_>>();
     Ok(())
 }
