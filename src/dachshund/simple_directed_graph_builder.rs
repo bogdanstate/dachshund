@@ -10,6 +10,7 @@ use crate::dachshund::graph_builder_base::GraphBuilderBase;
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::node::SimpleDirectedNode;
 use crate::dachshund::simple_directed_graph::SimpleDirectedGraph;
+use crate::dachshund::graph_schema::SimpleGraphSchema;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 pub struct SimpleDirectedGraphBuilder {}
@@ -17,6 +18,7 @@ pub struct SimpleDirectedGraphBuilder {}
 impl GraphBuilderBase for SimpleDirectedGraphBuilder {
     type GraphType = SimpleDirectedGraph;
     type RowType = (i64, i64);
+    type SchemaType = SimpleGraphSchema;
 
     // builds a graph from a vector of IDs. Repeated edges are ignored.
     #[allow(clippy::ptr_arg)]

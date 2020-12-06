@@ -24,8 +24,10 @@ pub struct TypedGraphBuilder {
     pub schema: Rc<TypedGraphSchema>,
 }
 impl GraphBuilderBase for TypedGraphBuilder {
+    
     type GraphType = TypedGraph;
     type RowType = EdgeRow;
+    type SchemaType = TypedGraphSchema;
 
     fn from_vector(&mut self, data: Vec<EdgeRow>) -> CLQResult<TypedGraph> {
         let mut source_ids: HashSet<NodeId> = HashSet::new();
@@ -258,8 +260,10 @@ impl TypedGraphBuilderWithCliques {
 }
 impl TypedGraphBuilderBase for TypedGraphBuilderWithCliques {}
 impl GraphBuilderBase for TypedGraphBuilderWithCliques {
+    
     type GraphType = TypedGraph;
     type RowType = EdgeRow;
+    type SchemaType = TypedGraphSchema;
 
     fn from_vector(&mut self, data: Vec<EdgeRow>) -> CLQResult<TypedGraph> {
         let mut source_ids: HashSet<NodeId> = HashSet::new();

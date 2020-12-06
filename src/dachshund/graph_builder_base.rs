@@ -6,6 +6,7 @@
  */
 use crate::dachshund::error::CLQResult;
 use crate::dachshund::graph_base::GraphBase;
+use crate::dachshund::graph_schema::GraphSchema;
 use crate::dachshund::id_types::NodeId;
 use std::hash::Hash;
 
@@ -22,9 +23,11 @@ pub trait GraphBuilderBase
 where
     Self: Sized,
     Self::GraphType: GraphBase,
+    Self::SchemaType: GraphSchema,
 {
     type GraphType;
     type RowType;
+    type SchemaType;
     fn from_vector(&mut self, data: Vec<Self::RowType>) -> CLQResult<Self::GraphType>;
 }
 
