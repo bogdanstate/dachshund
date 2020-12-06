@@ -10,12 +10,13 @@ use crate::dachshund::graph_builder_base::{
     GraphBuilderBase, GraphBuilderBaseWithGeneratedCliques, GraphBuilderBaseWithKnownCliques,
     GraphBuilderBaseWithPreProcessing, GraphBuilderFromVector,
 };
-use crate::dachshund::id_types::{GraphId, NodeId, NodeTypeId};
+use crate::dachshund::id_types::{EdgeTypeId, GraphId, NodeId, NodeTypeId};
 use crate::dachshund::node::NodeBase;
 use crate::dachshund::node::{Node, NodeEdge};
 use crate::dachshund::row::EdgeRow;
 use crate::dachshund::typed_graph::TypedGraph;
 use crate::dachshund::typed_graph_schema::TypedGraphSchema;
+use rand::seq::SliceRandom;
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::hash::Hash;
 use std::rc::Rc;
@@ -393,9 +394,11 @@ impl GraphBuilderBaseWithKnownCliques for TypedGraphBuilderWithCliquesOverExisti
 
 pub struct TypedGraphBuilderWithCliquesOverRandomGraph {
     pub graph_id: GraphId,
-    pub cliques: Vec<(BTreeSet<NodeId>, BTreeSet<NodeId>)>,
-    pub non_core_type_map: HashMap<NodeId, NodeTypeId>,
+    pub cliques:
+        Vec<HashMap<(NodeTypeId, NodeTypeId, EdgeTypeId), (BTreeSet<NodeId>, BTreeSet<NodeId>)>>,
+    pub node_type_map: HashMap<NodeId, NodeTypeId>,
     pub schema: Rc<TypedGraphSchema>,
+    clique_sizes: Vec<HashMap<(NodeTypeId, NodeTypeId, EdgeTypeId), (usize, usize)>>,
 }
 impl GraphBuilderBase for TypedGraphBuilderWithCliquesOverRandomGraph {
     type GraphType = TypedGraph;
@@ -408,7 +411,7 @@ impl GraphBuilderBase for TypedGraphBuilderWithCliquesOverRandomGraph {
 }
 impl TypedGraphBuilderWithCliques for TypedGraphBuilderWithCliquesOverRandomGraph {
     fn get_non_core_type_map(&self) -> &HashMap<NodeId, NodeTypeId> {
-        &self.non_core_type_map
+        &self.node_type_map
     }
     fn get_graph_id(&self) -> GraphId {
         self.graph_id.clone()
@@ -416,6 +419,46 @@ impl TypedGraphBuilderWithCliques for TypedGraphBuilderWithCliquesOverRandomGrap
 }
 impl TypedGraphBuilderBase for TypedGraphBuilderWithCliquesOverRandomGraph {}
 impl TypedGraphBuilderWithCliquesOverRandomGraph {
+
+    #[allow(dead_code)]
+    fn generate_cliques(&mut self) -> CLQResult<()> {
+        let mut reversed_type_map: HashMap<NodeTypeId, Vec<NodeId>> = HashMap::new();
+        for (node_id, node_type) in &self.node_type_map {
+            reversed_type_map
+                .entry(*node_type)
+                .or_insert(Vec::new())
+                .push(*node_id);
+        }
+        for clique_gen in &self.clique_sizes {
+            let mut clique: HashMap<
+                (NodeTypeId, NodeTypeId, EdgeTypeId),
+                (BTreeSet<NodeId>, BTreeSet<NodeId>),
+            > = HashMap::new();
+            for ((core_type_id, non_core_type_id, edge_type_id), (num_cores, num_non_cores)) in
+                clique_gen
+            {
+                let core_node_ids: BTreeSet<NodeId> = reversed_type_map
+                    .get(core_type_id)
+                    .unwrap()
+                    .choose_multiple(&mut rand::thread_rng(), *num_cores)
+                    .cloned()
+                    .collect();
+                let non_core_node_ids: BTreeSet<NodeId> = reversed_type_map
+                    .get(non_core_type_id)
+                    .unwrap()
+                    .choose_multiple(&mut rand::thread_rng(), *num_non_cores)
+                    .cloned()
+                    .collect();
+                clique.insert(
+                    (*core_type_id, *non_core_type_id, *edge_type_id),
+                    (core_node_ids, non_core_node_ids),
+                );
+            }
+            self.cliques.push(clique);
+        }
+        Ok(())
+    }
+
     #[allow(dead_code)]
     fn generate_graph(&mut self) -> CLQResult<TypedGraph> {
         let source_ids_vec = vec![NodeId::from(0)];
@@ -431,5 +474,12 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
         Self::populate_edges(&edges_with_cliques, &mut node_map)?;
         let graph = self.create_graph(node_map, source_ids_vec, target_ids_vec);
         graph
+    }
+}
+impl GraphBuilderBaseWithKnownCliques for TypedGraphBuilderWithCliquesOverRandomGraph {
+    type CliquesType =
+        HashMap<(NodeTypeId, NodeTypeId, EdgeTypeId), (BTreeSet<NodeId>, BTreeSet<NodeId>)>;
+    fn get_cliques(&self) -> &Vec<Self::CliquesType> {
+        &self.cliques
     }
 }
