@@ -247,10 +247,10 @@ pub trait TypedGraphBuilderBase: GraphBuilderBase<SchemaType = TypedGraphSchema>
     }
 }
 impl TypedGraphBuilderBase for TypedGraphBuilder {}
+
 pub struct TypedGraphBuilderWithCliquesOverExistingGraph {
     pub graph_id: GraphId,
     pub cliques: Vec<(BTreeSet<NodeId>, BTreeSet<NodeId>)>,
-    pub core_type_id: NodeTypeId,
     pub non_core_type_map: HashMap<NodeId, NodeTypeId>,
     pub edge_type_map: HashMap<(NodeTypeId, NodeTypeId), Vec<EdgeTypeId>>,
     pub schema: Rc<TypedGraphSchema>,
@@ -265,7 +265,6 @@ impl TypedGraphBuilderWithCliquesOverExistingGraph {
         Self {
             graph_id,
             cliques,
-            core_type_id: schema.get_core_type_id().unwrap().clone(),
             non_core_type_map: HashMap::new(),
             edge_type_map: HashMap::new(),
             schema: schema,
@@ -315,13 +314,14 @@ impl GraphBuilderBaseWithPreProcessing for TypedGraphBuilderWithCliquesOverExist
         data: Vec<<Self as GraphBuilderBase>::RowType>,
     ) -> CLQResult<Vec<<Self as GraphBuilderBase>::RowType>> {
         let mut row_set: HashSet<<Self as GraphBuilderBase>::RowType> = HashSet::new();
+        let core_type_id = self.get_schema().get_core_type_id()?.clone();
         for el in data.into_iter() {
             let target_type = el.target_type_id.clone();
             let edge_type = el.edge_type_id.clone();
             self.non_core_type_map
                 .insert(el.target_id.clone(), target_type.clone());
             self.edge_type_map
-                .entry((self.core_type_id, target_type))
+                .entry((core_type_id, target_type))
                 .or_insert(Vec::new())
                 .push(edge_type);
             row_set.insert(el);
