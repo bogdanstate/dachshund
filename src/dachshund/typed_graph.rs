@@ -11,6 +11,7 @@ use crate::dachshund::node::Node;
 use crate::dachshund::typed_graph_schema::TypedGraphSchema;
 use std::collections::hash_map::{Keys, Values};
 use std::collections::HashMap;
+use std::rc::Rc;
 
 /// Keeps track of a bipartite graph composed of "core" and "non-core" nodes. Only core ->
 /// non-core connections may exist in the graph. The neighbors of core nodes are non-cores, the
@@ -22,6 +23,7 @@ pub struct TypedGraph {
     pub nodes: HashMap<NodeId, Node>,
     pub core_ids: Vec<NodeId>,
     pub non_core_ids: Vec<NodeId>,
+    pub schema: Rc<TypedGraphSchema>,
 }
 impl GraphBase for TypedGraph {
     type NodeType = Node;

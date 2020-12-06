@@ -51,16 +51,18 @@ impl GraphBuilderBase for TypedGraphBuilder {
         let mut node_map: HashMap<NodeId, Node> =
             Self::init_nodes(&source_ids_vec, &target_ids_vec, &target_type_ids);
         Self::populate_edges(&data, &mut node_map)?;
-        let mut graph = Self::create_graph(node_map, source_ids_vec, target_ids_vec)?;
+        let mut graph = self.create_graph(node_map, source_ids_vec, target_ids_vec)?;
         if let Some(min_degree) = self.min_degree {
-            graph = Self::prune(graph, &data, min_degree)?;
+            graph = self.prune(graph, &data, min_degree)?;
         }
         Ok(graph)
     }
 }
 
-pub trait TypedGraphBuilderBase {
+pub trait TypedGraphBuilderBase: GraphBuilderBase<SchemaType =
+TypedGraphSchema> {
     fn create_graph(
+        &self,
         nodes: HashMap<NodeId, Node>,
         core_ids: Vec<NodeId>,
         non_core_ids: Vec<NodeId>,
@@ -69,6 +71,7 @@ pub trait TypedGraphBuilderBase {
             nodes,
             core_ids,
             non_core_ids,
+            schema: self.get_schema().clone(),
         })
     }
 
@@ -188,7 +191,7 @@ pub trait TypedGraphBuilderBase {
     /// new graph, where all nodes are assured to have degree at least min_degree.
     /// The provision of a TypedGraph is necessary, since the notion of "degree" does
     /// not make sense outside of a graph.
-    fn prune(graph: TypedGraph, rows: &Vec<EdgeRow>, min_degree: usize) -> CLQResult<TypedGraph> {
+    fn prune(&self, graph: TypedGraph, rows: &Vec<EdgeRow>, min_degree: usize) -> CLQResult<TypedGraph> {
         let mut target_type_ids: HashMap<NodeId, NodeTypeId> = HashMap::new();
         for r in rows.iter() {
             target_type_ids.insert(r.target_id, r.target_type_id);
@@ -201,7 +204,7 @@ pub trait TypedGraphBuilderBase {
         let mut filtered_node_map: HashMap<NodeId, Node> =
             Self::init_nodes(&filtered_source_ids, &filtered_target_ids, &target_type_ids);
         Self::populate_edges(&filtered_rows, &mut filtered_node_map)?;
-        Self::create_graph(filtered_node_map, filtered_source_ids, filtered_target_ids)
+        self.create_graph(filtered_node_map, filtered_source_ids, filtered_target_ids)
     }
     /// called by `prune`, finds source and target nodes to exclude, as well as edges to exclude
     /// when rebuilding the graph from a filtered vector of `EdgeRows`.
@@ -293,7 +296,7 @@ impl GraphBuilderBase for TypedGraphBuilderWithCliques {
         let mut node_map: HashMap<NodeId, Node> =
             Self::init_nodes(&source_ids_vec, &target_ids_vec, &target_type_ids);
         Self::populate_edges(&data, &mut node_map)?;
-        let graph = Self::create_graph(node_map, source_ids_vec, target_ids_vec)?;
+        let graph = self.create_graph(node_map, source_ids_vec, target_ids_vec)?;
         Ok(graph)
     }
 }

@@ -98,11 +98,18 @@ fn test_prune_small_clique() -> CLQResult<()> {
     ];
     let graph_id: GraphId = 0.into();
 
-    let transformer = gen_test_transformer(ts, "author".to_string())?;
+    let transformer = gen_test_transformer(ts.clone(), "author".to_string())?;
     let rows = process_raw_vector(&transformer, raw)?;
     let mut graph: TypedGraph = transformer.build_pruned_graph(graph_id, rows.clone())?;
     assert_eq!(graph.nodes.len(), 5);
-    graph = TypedGraphBuilder::prune(graph, &rows, 2)?;
+    
+    let schema = Rc::new(TypedGraphSchema::new(ts.clone(), "author".into())?);
+    let builder = TypedGraphBuilder{
+        min_degree: Some(2),
+        graph_id: GraphId::from(1),
+        schema: schema,
+    };
+    graph = builder.prune(graph, &rows, 2)?;
     assert_eq!(graph.nodes.len(), 4);
     let v = Vec::new();
     let res: Candidate<TypedGraph> = transformer

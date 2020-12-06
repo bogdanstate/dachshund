@@ -18,16 +18,21 @@ use lib_dachshund::dachshund::scorer::Scorer;
 use lib_dachshund::dachshund::test_utils::{gen_test_transformer, process_raw_vector};
 use lib_dachshund::dachshund::transformer::Transformer;
 use lib_dachshund::dachshund::typed_graph::TypedGraph;
+use lib_dachshund::dachshund::typed_graph_schema::TypedGraphSchema;
+use std::rc::Rc;
 
 #[cfg(test)]
 #[test]
 fn test_output_simple_candidate() -> CLQResult<()> {
     let node_id = NodeId::from(0);
     let node: Node = Node::new(node_id, true, None, Vec::new(), HashMap::new());
+    
+    let schema = Rc::new(TypedGraphSchema::empty());
     let mut graph: TypedGraph = TypedGraph {
         nodes: HashMap::new(),
         core_ids: vec![],
         non_core_ids: vec![],
+        schema: schema,
     };
     graph.nodes.insert(node_id, node);
     graph.core_ids.push(node_id);
