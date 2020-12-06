@@ -80,3 +80,36 @@ fn test_typed_graph_seeding() -> CLQResult<()> {
     assert_eq!(processed_rows.len(), num_original_rows + 9 * 2 - 3);
     Ok(())
 }
+
+#[test]
+fn test_typed_graph_seeding_two_cliques() -> CLQResult<()> {
+    let typespec = vec![
+        vec!["author".to_string(), "published".into(), "article".into()],
+        vec!["author".to_string(), "cited".into(), "article".into()],
+        vec!["author".to_string(), "published".into(), "book".into()],
+    ];
+    let raw = vec![
+        "0\t1\t5\tauthor\tpublished\tarticle".to_string(),
+        "0\t2\t6\tauthor\tpublished\tarticle".into(),
+        "0\t3\t7\tauthor\tpublished\tarticle".into(),
+        "0\t4\t8\tauthor\tcited\tarticle".into(),
+        "0\t1\t9\tauthor\tpublished\tbook".into(),
+        "0\t1\t10\tauthor\tpublished\tarticle".into(),
+        "0\t1\t11\tauthor\tpublished\tarticle".into(),
+    ];
+    let num_original_rows = raw.len();
+    let schema = Rc::new(TypedGraphSchema::new(typespec, "author".to_string())?);
+    let processed_rows = get_seeded_rows(
+        schema,
+        raw,
+        vec![
+            (vec![1, 2, 3], vec![5, 6, 7]),
+            (vec![3, 4], vec![9, 10, 11]),
+        ],
+    )?;
+    assert_eq!(
+        processed_rows.len(),
+        num_original_rows + 9 * 2 - 3 + 2 + 4 * 2
+    );
+    Ok(())
+}
