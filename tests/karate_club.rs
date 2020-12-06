@@ -29,6 +29,7 @@ use lib_dachshund::dachshund::node::DirectedNodeBase;
 use lib_dachshund::dachshund::shortest_paths::ShortestPaths;
 use lib_dachshund::dachshund::simple_directed_graph::{DirectedGraph, SimpleDirectedGraph};
 use lib_dachshund::dachshund::simple_directed_graph_builder::SimpleDirectedGraphBuilder;
+use lib_dachshund::dachshund::simple_graph::SimpleGraph;
 use lib_dachshund::dachshund::simple_undirected_graph::SimpleUndirectedGraph;
 use lib_dachshund::dachshund::simple_undirected_graph_builder::{
     SimpleUndirectedGraphBuilder, SimpleUndirectedGraphBuilderWithCliques,

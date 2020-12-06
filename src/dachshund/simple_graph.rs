@@ -9,4 +9,5 @@ use crate::dachshund::graph_base::GraphBase;
 pub trait SimpleGraph
 where Self: GraphBase,
 <Self as GraphBase>::SchemaType: GraphSchema {
+    fn create_empty() -> Self;
 }

@@ -45,7 +45,14 @@ pub struct SimpleDirectedGraph {
     pub ids: Vec<NodeId>,
 }
 impl DirectedGraph for SimpleDirectedGraph {}
-impl SimpleGraph for SimpleDirectedGraph {}
+impl SimpleGraph for SimpleDirectedGraph {
+    fn create_empty() -> Self {
+        SimpleDirectedGraph {
+            nodes: HashMap::new(),
+            ids: Vec::new(),
+        }
+    }
+}
 impl GraphBase for SimpleDirectedGraph {
     type NodeType = SimpleDirectedNode;
     type SchemaType = SimpleGraphSchema;
@@ -83,12 +90,6 @@ impl GraphBase for SimpleDirectedGraph {
     }
     fn count_nodes(&self) -> usize {
         self.nodes.len()
-    }
-    fn create_empty() -> Self {
-        SimpleDirectedGraph {
-            nodes: HashMap::new(),
-            ids: Vec::new(),
-        }
     }
 }
 

@@ -36,7 +36,14 @@ pub struct SimpleUndirectedGraph {
     pub ids: Vec<NodeId>,
 }
 impl UndirectedGraph for SimpleUndirectedGraph {}
-impl SimpleGraph for SimpleUndirectedGraph {}
+impl SimpleGraph for SimpleUndirectedGraph {
+    fn create_empty() -> Self {
+        SimpleUndirectedGraph {
+            nodes: HashMap::new(),
+            ids: Vec::new(),
+        }
+    }
+}
 impl GraphBase for SimpleUndirectedGraph {
     type NodeType = SimpleNode;
     type SchemaType = SimpleGraphSchema;
@@ -73,12 +80,6 @@ impl GraphBase for SimpleUndirectedGraph {
     }
     fn count_nodes(&self) -> usize {
         self.nodes.len()
-    }
-    fn create_empty() -> Self {
-        SimpleUndirectedGraph {
-            nodes: HashMap::new(),
-            ids: Vec::new(),
-        }
     }
 }
 impl SimpleUndirectedGraph {
