@@ -71,7 +71,6 @@ impl<'a> TypedGraphCliqueSearchBeam<'a> {
     ///     - `beam_size`: the number of top candidates to maintain as potential future sources
     ///     for expansion in the "beam" (i.e., the list of top candidates).
     ///     - `verbose`: used for debugging.
-    ///     - `non_core_types`: list of string identifiers for non-core types.
     ///     - `alpha`: `Scorer` constructor parameter. Controls the contribution of density
     ///     to the ``cliqueness'' score. Higher values means denser cliques are prefered, all else
     ///     being equal.
@@ -86,14 +85,14 @@ impl<'a> TypedGraphCliqueSearchBeam<'a> {
         graph: &'a TypedGraph,
         clique_rows: &'a Vec<CliqueRow>,
         verbose: bool,
-        non_core_types: Vec<String>,
-        num_non_core_types: usize,
         search_problem: Rc<SearchProblem>,
         graph_id: GraphId,
     ) -> CLQResult<TypedGraphCliqueSearchBeam<'a>> {
         let core_ids: &Vec<NodeId> = &graph.get_core_ids();
         let non_core_ids: &Vec<NodeId> = &graph.get_non_core_ids().unwrap();
-
+        let schema = graph.get_schema();
+        let non_core_types = schema.get_non_core_types();
+        let num_non_core_types = schema.get_num_non_core_types();
         let mut candidates: Vec<Candidate<TypedGraph>> = Vec::new();
         let scorer: Scorer = Scorer::new(num_non_core_types, &search_problem);
 

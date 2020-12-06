@@ -34,7 +34,6 @@ fn test_init_beam_with_clique_rows() -> CLQResult<()> {
         vec!["author".to_string(), "published".into(), "article".into()],
         vec!["author".to_string(), "cited".into(), "article".into()],
     ];
-    let target_types: Vec<String> = vec!["article".to_string()];
     let raw = vec![
         "0\t1\t3\tauthor\tpublished\tarticle".to_string(),
         "0\t2\t3\tauthor\tpublished\tarticle".into(),
@@ -62,8 +61,6 @@ fn test_init_beam_with_clique_rows() -> CLQResult<()> {
         &graph,
         &clique_rows,
         false,
-        target_types,
-        1,
         transformer.search_problem.clone(),
         graph_id,
     )?;
@@ -79,7 +76,6 @@ fn test_init_beam_with_partially_overlapping_clique_rows() -> CLQResult<()> {
         vec!["author".to_string(), "published".into(), "article".into()],
         vec!["author".to_string(), "cited".into(), "article".into()],
     ];
-    let target_types: Vec<String> = vec!["article".to_string()];
     let raw = vec![
         "0\t1\t3\tauthor\tpublished\tarticle".to_string(),
         "0\t2\t3\tauthor\tpublished\tarticle".into(),
@@ -104,8 +100,6 @@ fn test_init_beam_with_partially_overlapping_clique_rows() -> CLQResult<()> {
         &graph,
         &clique_rows,
         false,
-        target_types,
-        1,
         transformer.search_problem.clone(),
         graph_id,
     )?;

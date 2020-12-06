@@ -186,8 +186,6 @@ impl Transformer {
             graph,
             clique_rows,
             verbose,
-            self.schema.get_non_core_types(),
-            self.schema.get_num_non_core_types(),
             self.search_problem.clone(),
             graph_id,
         )?;
