@@ -169,6 +169,7 @@ impl Transformer {
         TypedGraphBuilder {
             graph_id,
             min_degree: Some(self.search_problem.min_degree),
+            schema: self.schema.clone(),
         }
         .from_vector(rows)
     }

@@ -4,22 +4,24 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::graph_builder_base::{
     GraphBuilderBase, GraphBuilderBaseWithCliques, GraphBuilderBaseWithPreProcessing,
 };
-use crate::dachshund::node::NodeBase;
-use crate::dachshund::typed_graph::TypedGraph;
-
-use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::id_types::{EdgeTypeId, GraphId, NodeId, NodeTypeId};
+use crate::dachshund::node::NodeBase;
 use crate::dachshund::node::{Node, NodeEdge};
 use crate::dachshund::row::EdgeRow;
+use crate::dachshund::typed_graph::TypedGraph;
+use crate::dachshund::typed_graph_schema::TypedGraphSchema;
 use std::collections::{BTreeSet, HashMap, HashSet};
+use std::rc::Rc;
 
 pub struct TypedGraphBuilder {
     pub min_degree: Option<usize>,
     pub graph_id: GraphId,
+    pub schema: Rc<TypedGraphSchema>,
 }
 impl GraphBuilderBase for TypedGraphBuilder {
     type GraphType = TypedGraph;
