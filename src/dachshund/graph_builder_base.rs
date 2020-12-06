@@ -36,6 +36,7 @@ pub trait GraphBuilderBaseWithCliques: GraphBuilderBaseWithPreProcessing
 where
     <Self as GraphBuilderBase>::RowType: Eq,
     <Self as GraphBuilderBase>::RowType: Hash,
+    Self: GraphBuilderBase
 {
     type CliquesType;
 

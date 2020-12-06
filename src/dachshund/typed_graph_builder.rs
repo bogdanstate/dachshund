@@ -245,7 +245,6 @@ pub trait TypedGraphBuilderBase: GraphBuilderBase<SchemaType = TypedGraphSchema>
         (filtered_source_ids, filtered_target_ids, filtered_rows)
     }
 }
-
 impl TypedGraphBuilderBase for TypedGraphBuilder {}
 pub struct TypedGraphBuilderWithCliquesOverExistingGraph {
     pub graph_id: GraphId,
@@ -255,6 +254,7 @@ pub struct TypedGraphBuilderWithCliquesOverExistingGraph {
     pub edge_type_map: HashMap<(NodeTypeId, NodeTypeId), Vec<EdgeTypeId>>,
     pub schema: Rc<TypedGraphSchema>,
 }
+impl TypedGraphBuilderBase for TypedGraphBuilderWithCliquesOverExistingGraph {}
 impl TypedGraphBuilderWithCliquesOverExistingGraph {
     pub fn new(
         graph_id: GraphId,
@@ -271,7 +271,6 @@ impl TypedGraphBuilderWithCliquesOverExistingGraph {
         }
     }
 }
-impl TypedGraphBuilderBase for TypedGraphBuilderWithCliquesOverExistingGraph {}
 impl GraphBuilderBase for TypedGraphBuilderWithCliquesOverExistingGraph {
     type GraphType = TypedGraph;
     type RowType = EdgeRow;
@@ -341,13 +340,28 @@ impl GraphBuilderBaseWithPreProcessing for TypedGraphBuilderWithCliquesOverExist
         Ok(rows_with_cliques)
     }
 }
+
+trait TypedGraphBuilderWithCliques {
+    fn get_non_core_type_map(&self) -> &HashMap<NodeId, NodeTypeId>;
+    fn get_edge_type_map(&self) -> &HashMap<(NodeTypeId, NodeTypeId), Vec<EdgeTypeId>>;
+}
+
+impl TypedGraphBuilderWithCliques for TypedGraphBuilderWithCliquesOverExistingGraph {
+    fn get_non_core_type_map(&self) -> &HashMap<NodeId, NodeTypeId> {
+        &self.non_core_type_map
+    }
+    fn get_edge_type_map(&self) -> &HashMap<(NodeTypeId, NodeTypeId), Vec<EdgeTypeId>> {
+        &self.edge_type_map
+    }
+}
+
 impl GraphBuilderBaseWithCliques for TypedGraphBuilderWithCliquesOverExistingGraph {
     type CliquesType = (BTreeSet<NodeId>, BTreeSet<NodeId>);
 
     fn get_clique_edges(&self, id1: NodeId, id2: NodeId) -> CLQResult<Vec<EdgeRow>> {
-        let source_type_id = self.core_type_id.clone();
+        let source_type_id = self.get_schema().get_core_type_id()?.clone();
         let target_type_id = self
-            .non_core_type_map
+            .get_non_core_type_map()
             .get(&id2)
             .ok_or_else(|| {
                 CLQError::Generic(
@@ -356,7 +370,7 @@ impl GraphBuilderBaseWithCliques for TypedGraphBuilderWithCliquesOverExistingGra
             })?
             .clone();
         Ok(self
-            .edge_type_map
+            .get_edge_type_map()
             .get(&(source_type_id, target_type_id))
             .ok_or_else(CLQError::err_none)?
             .iter()
