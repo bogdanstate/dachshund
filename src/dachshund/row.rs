@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 use crate::dachshund::id_types::{EdgeTypeId, GraphId, NodeId, NodeTypeId};
+use core::cmp::Ordering;
 use std::fmt;
 
 ///  Used to keep track of edge row input.
@@ -21,9 +22,40 @@ impl fmt::Display for EdgeRow {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "EdgeRow: {}\t{}\t{}",
-            self.graph_id, self.source_id, self.target_id
+            "EdgeRow: {}\t{}\t{}\t{}\t{}\t{}",
+            self.graph_id,
+            self.source_id,
+            self.target_id,
+            self.source_type_id,
+            self.target_type_id,
+            self.edge_type_id,
         )
+    }
+}
+impl Ord for EdgeRow {
+    fn cmp(&self, other: &Self) -> Ordering {
+        let self_tuple = (
+            self.graph_id,
+            self.source_id,
+            self.target_id,
+            self.source_type_id,
+            self.target_type_id,
+            self.edge_type_id,
+        );
+        let other_tuple = (
+            other.graph_id,
+            other.source_id,
+            other.target_id,
+            other.source_type_id,
+            other.target_type_id,
+            other.edge_type_id,
+        );
+        self_tuple.cmp(&other_tuple)
+    }
+}
+impl PartialOrd for EdgeRow {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 /// used to keep track of clique row input (when used for initialization of search

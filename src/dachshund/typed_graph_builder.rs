@@ -314,7 +314,7 @@ impl GraphBuilderBaseWithPreProcessing for TypedGraphBuilderWithCliques {
             let target_type = el.target_type_id.clone();
             let edge_type = el.edge_type_id.clone();
             self.non_core_type_map
-                .insert(el.source_id.clone(), target_type.clone());
+                .insert(el.target_id.clone(), target_type.clone());
             self.edge_type_map
                 .entry((self.core_type_id, target_type))
                 .or_insert(Vec::new())
@@ -325,11 +325,7 @@ impl GraphBuilderBaseWithPreProcessing for TypedGraphBuilderWithCliques {
         for (core, non_core) in self.get_cliques() {
             for core_id in core {
                 for non_core_id in non_core {
-                    for clique_edge in self
-                        .get_clique_edges(*core_id, *non_core_id)
-                        .unwrap()
-                        .into_iter()
-                    {
+                    for clique_edge in self.get_clique_edges(*core_id, *non_core_id)?.into_iter() {
                         row_set.insert(clique_edge);
                     }
                 }
@@ -348,7 +344,11 @@ impl GraphBuilderBaseWithCliques for TypedGraphBuilderWithCliques {
         let target_type_id = self
             .non_core_type_map
             .get(&id2)
-            .ok_or_else(CLQError::err_none)?
+            .ok_or_else(|| {
+                CLQError::Generic(
+                    format!("Cannot find id2 ({}) in self_non_core_type_map", id2).into(),
+                )
+            })?
             .clone();
         Ok(self
             .edge_type_map
