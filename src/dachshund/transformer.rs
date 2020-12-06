@@ -182,7 +182,6 @@ impl Transformer {
         graph_id: GraphId,
         verbose: bool,
     ) -> CLQResult<TypedGraphCliqueSearchResult<'a>> {
-
         let mut beam = TypedGraphCliqueSearchBeam::new(
             self.search_problem.clone(),
             graph_id,
