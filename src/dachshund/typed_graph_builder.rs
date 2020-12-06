@@ -10,7 +10,7 @@ use crate::dachshund::graph_builder_base::{
     GraphBuilderBase, GraphBuilderBaseWithGeneratedCliques, GraphBuilderBaseWithKnownCliques,
     GraphBuilderBaseWithPreProcessing, GraphBuilderFromVector,
 };
-use crate::dachshund::id_types::{EdgeTypeId, GraphId, NodeId, NodeTypeId};
+use crate::dachshund::id_types::{GraphId, NodeId, NodeTypeId};
 use crate::dachshund::node::NodeBase;
 use crate::dachshund::node::{Node, NodeEdge};
 use crate::dachshund::row::EdgeRow;
@@ -252,7 +252,6 @@ pub struct TypedGraphBuilderWithCliquesOverExistingGraph {
     pub graph_id: GraphId,
     pub cliques: Vec<(BTreeSet<NodeId>, BTreeSet<NodeId>)>,
     pub non_core_type_map: HashMap<NodeId, NodeTypeId>,
-    pub edge_type_map: HashMap<(NodeTypeId, NodeTypeId), Vec<EdgeTypeId>>,
     pub schema: Rc<TypedGraphSchema>,
 }
 impl TypedGraphBuilderBase for TypedGraphBuilderWithCliquesOverExistingGraph {}
@@ -266,7 +265,6 @@ impl TypedGraphBuilderWithCliquesOverExistingGraph {
             graph_id,
             cliques,
             non_core_type_map: HashMap::new(),
-            edge_type_map: HashMap::new(),
             schema: schema,
         }
     }
@@ -314,16 +312,10 @@ impl GraphBuilderBaseWithPreProcessing for TypedGraphBuilderWithCliquesOverExist
         data: Vec<<Self as GraphBuilderBase>::RowType>,
     ) -> CLQResult<Vec<<Self as GraphBuilderBase>::RowType>> {
         let mut row_set: HashSet<<Self as GraphBuilderBase>::RowType> = HashSet::new();
-        let core_type_id = self.get_schema().get_core_type_id()?.clone();
         for el in data.into_iter() {
             let target_type = el.target_type_id.clone();
-            let edge_type = el.edge_type_id.clone();
             self.non_core_type_map
                 .insert(el.target_id.clone(), target_type.clone());
-            self.edge_type_map
-                .entry((core_type_id, target_type))
-                .or_insert(Vec::new())
-                .push(edge_type);
             row_set.insert(el);
         }
 
@@ -344,15 +336,11 @@ impl GraphBuilderBaseWithPreProcessing for TypedGraphBuilderWithCliquesOverExist
 
 pub trait TypedGraphBuilderWithCliques {
     fn get_non_core_type_map(&self) -> &HashMap<NodeId, NodeTypeId>;
-    fn get_edge_type_map(&self) -> &HashMap<(NodeTypeId, NodeTypeId), Vec<EdgeTypeId>>;
     fn get_graph_id(&self) -> GraphId;
 }
 impl TypedGraphBuilderWithCliques for TypedGraphBuilderWithCliquesOverExistingGraph {
     fn get_non_core_type_map(&self) -> &HashMap<NodeId, NodeTypeId> {
         &self.non_core_type_map
-    }
-    fn get_edge_type_map(&self) -> &HashMap<(NodeTypeId, NodeTypeId), Vec<EdgeTypeId>> {
-        &self.edge_type_map
     }
     fn get_graph_id(&self) -> GraphId {
         self.graph_id.clone()
@@ -380,6 +368,7 @@ where
             })?
             .clone();
         Ok(self
+            .get_schema()
             .get_edge_type_map()
             .get(&(source_type_id, target_type_id))
             .ok_or_else(CLQError::err_none)?
