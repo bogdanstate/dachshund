@@ -7,8 +7,10 @@
 extern crate lib_dachshund;
 
 use lib_dachshund::dachshund::error::{CLQError, CLQResult};
-use lib_dachshund::dachshund::graph_base::{GraphBase};
-use lib_dachshund::dachshund::graph_builder_base::{GraphBuilderBase, GraphBuilderBaseWithPreProcessing};
+use lib_dachshund::dachshund::graph_base::GraphBase;
+use lib_dachshund::dachshund::graph_builder_base::{
+    GraphBuilderBase, GraphBuilderBaseWithPreProcessing,
+};
 use lib_dachshund::dachshund::id_types::{GraphId, NodeId};
 use lib_dachshund::dachshund::line_processor::LineProcessorBase;
 use lib_dachshund::dachshund::row::EdgeRow;
@@ -102,15 +104,8 @@ fn test_typed_graph_seeding() -> CLQResult<()> {
     ];
     let num_original_rows = raw.len();
     let schema = Rc::new(TypedGraphSchema::new(typespec, "author".to_string())?);
-    let cliques = vec![
-            (vec![1, 2, 3], vec![5, 6, 7]),
-    ];
-    let processed_rows = get_seeded_rows(
-        GraphId::from(0),
-        schema.clone(),
-        &raw,
-        &cliques,
-    )?;
+    let cliques = vec![(vec![1, 2, 3], vec![5, 6, 7])];
+    let processed_rows = get_seeded_rows(GraphId::from(0), schema.clone(), &raw, &cliques)?;
     assert_eq!(processed_rows.len(), num_original_rows + 9 * 2 - 3);
 
     let graph = get_seeded_graph(GraphId::from(0), schema, &raw, &cliques)?;
@@ -137,18 +132,16 @@ fn test_typed_graph_seeding_two_cliques() -> CLQResult<()> {
     let num_original_rows = raw.len();
     let schema = Rc::new(TypedGraphSchema::new(typespec, "author".to_string())?);
     let cliques = vec![
-            (vec![1, 2, 3], vec![5, 6, 7]),
-            (vec![3, 4], vec![9, 10, 11]),
+        (vec![1, 2, 3], vec![5, 6, 7]),
+        (vec![3, 4], vec![9, 10, 11]),
     ];
-    let processed_rows = get_seeded_rows(
-        GraphId::from(0),
-        schema,
-        &raw,
-        &cliques,
-    )?;
+    let processed_rows = get_seeded_rows(GraphId::from(0), schema.clone(), &raw, &cliques)?;
     assert_eq!(
         processed_rows.len(),
         num_original_rows + 9 * 2 - 3 + 2 + 4 * 2
     );
+
+    let graph = get_seeded_graph(GraphId::from(0), schema, &raw, &cliques)?;
+    assert_eq!(graph.count_edges() / 2, processed_rows.len());
     Ok(())
 }
