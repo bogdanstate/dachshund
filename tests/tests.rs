@@ -20,6 +20,9 @@ use lib_dachshund::dachshund::transformer::Transformer;
 use lib_dachshund::dachshund::typed_graph::TypedGraph;
 use lib_dachshund::dachshund::typed_graph_line_processor::TypedGraphLineProcessor;
 use lib_dachshund::dachshund::typed_graph_schema::TypedGraphSchema;
+use lib_dachshund::dachshund::typed_graph_builder::TypedGraphBuilderWithCliques;
+use lib_dachshund::dachshund::graph_builder_base::GraphBuilderBaseWithPreProcessing;
+
 use std::rc::Rc;
 use std::sync::mpsc::channel;
 
@@ -331,5 +334,37 @@ fn test_typespec() -> CLQResult<()> {
     );
     assert_eq!(row.edge_type_id, EdgeTypeId::from(1 as usize));
 
+    Ok(())
+}
+
+#[test]
+fn test_typed_graph_seeding() -> CLQResult<()> {
+    let typespec = vec![
+        vec!["author".to_string(), "published".into(), "article".into()],
+        vec!["author".to_string(), "cited".into(), "article".into()],
+        vec!["author".to_string(), "published".into(), "book".into()],
+    ];
+    let raw = vec![
+        "0\t1\t5\tauthor\tpublished\tarticle".to_string(),
+        "0\t2\t6\tauthor\tpublished\tarticle".into(),
+        "0\t3\t7\tauthor\tpublished\tarticle".into(),
+        "0\t4\t8\tauthor\tcited\tarticle".into(),
+    ];
+    let schema = Rc::new(TypedGraphSchema::new(typespec, "author".to_string())?);
+    let line_processor = TypedGraphLineProcessor::new(schema.clone());
+    let rows = raw.iter().map(|line| {
+        line_processor
+            .process_line(line.clone()).unwrap()
+            .as_edge_row()
+            .ok_or_else(CLQError::err_none).unwrap()
+    }).collect::<Vec<_>>();
+    let graph_id = GraphId::from(1);
+    let mut builder_no_cliques = TypedGraphBuilderWithCliques::new(
+        graph_id,
+        Vec::new(),
+        schema,
+    );
+    let processed_rows = builder_no_cliques.pre_process_rows(rows)?;
+    assert_eq!(processed_rows.len(), raw.len());
     Ok(())
 }

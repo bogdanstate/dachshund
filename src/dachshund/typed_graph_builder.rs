@@ -253,17 +253,15 @@ pub struct TypedGraphBuilderWithCliques {
     pub schema: Rc<TypedGraphSchema>,
 }
 impl TypedGraphBuilderWithCliques {
-    #[allow(dead_code)]
-    fn new(
+    pub fn new(
         graph_id: GraphId,
         cliques: Vec<(BTreeSet<NodeId>, BTreeSet<NodeId>)>,
-        core_type_id: NodeTypeId,
         schema: Rc<TypedGraphSchema>,
     ) -> Self {
         Self {
             graph_id,
             cliques,
-            core_type_id,
+            core_type_id: schema.get_core_type_id().unwrap().clone(),
             non_core_type_map: HashMap::new(),
             edge_type_map: HashMap::new(),
             schema: schema,
