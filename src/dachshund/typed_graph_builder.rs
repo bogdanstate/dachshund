@@ -24,11 +24,13 @@ pub struct TypedGraphBuilder {
     pub schema: Rc<TypedGraphSchema>,
 }
 impl GraphBuilderBase for TypedGraphBuilder {
-    
     type GraphType = TypedGraph;
     type RowType = EdgeRow;
     type SchemaType = TypedGraphSchema;
 
+    fn get_schema(&self) -> Rc<Self::SchemaType> {
+        self.schema.clone()
+    }
     fn from_vector(&mut self, data: Vec<EdgeRow>) -> CLQResult<TypedGraph> {
         let mut source_ids: HashSet<NodeId> = HashSet::new();
         let mut target_ids: HashSet<NodeId> = HashSet::new();
@@ -241,6 +243,7 @@ pub struct TypedGraphBuilderWithCliques {
     pub core_type_id: NodeTypeId,
     pub non_core_type_map: HashMap<NodeId, NodeTypeId>,
     pub edge_type_map: HashMap<(NodeTypeId, NodeTypeId), Vec<EdgeTypeId>>,
+    pub schema: Rc<TypedGraphSchema>,
 }
 impl TypedGraphBuilderWithCliques {
     #[allow(dead_code)]
@@ -248,6 +251,7 @@ impl TypedGraphBuilderWithCliques {
         graph_id: GraphId,
         cliques: Vec<(BTreeSet<NodeId>, BTreeSet<NodeId>)>,
         core_type_id: NodeTypeId,
+        schema: Rc<TypedGraphSchema>,
     ) -> Self {
         Self {
             graph_id,
@@ -255,15 +259,19 @@ impl TypedGraphBuilderWithCliques {
             core_type_id,
             non_core_type_map: HashMap::new(),
             edge_type_map: HashMap::new(),
+            schema: schema,
         }
     }
 }
 impl TypedGraphBuilderBase for TypedGraphBuilderWithCliques {}
 impl GraphBuilderBase for TypedGraphBuilderWithCliques {
-    
     type GraphType = TypedGraph;
     type RowType = EdgeRow;
     type SchemaType = TypedGraphSchema;
+
+    fn get_schema(&self) -> Rc<Self::SchemaType> {
+        self.schema.clone()
+    }
 
     fn from_vector(&mut self, data: Vec<EdgeRow>) -> CLQResult<TypedGraph> {
         let mut source_ids: HashSet<NodeId> = HashSet::new();

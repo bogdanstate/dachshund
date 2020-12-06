@@ -7,11 +7,12 @@
 extern crate nalgebra as na;
 use crate::dachshund::error::CLQResult;
 use crate::dachshund::graph_builder_base::GraphBuilderBase;
+use crate::dachshund::graph_schema::SimpleGraphSchema;
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::node::SimpleDirectedNode;
 use crate::dachshund::simple_directed_graph::SimpleDirectedGraph;
-use crate::dachshund::graph_schema::SimpleGraphSchema;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::rc::Rc;
 
 pub struct SimpleDirectedGraphBuilder {}
 
@@ -49,5 +50,8 @@ impl GraphBuilderBase for SimpleDirectedGraphBuilder {
             ids: nodes.keys().cloned().collect(),
             nodes: nodes,
         })
+    }
+    fn get_schema(&self) -> Rc<Self::SchemaType> {
+        Rc::new(SimpleGraphSchema {})
     }
 }

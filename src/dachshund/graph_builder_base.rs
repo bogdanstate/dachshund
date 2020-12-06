@@ -9,6 +9,7 @@ use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::graph_schema::GraphSchema;
 use crate::dachshund::id_types::NodeId;
 use std::hash::Hash;
+use std::rc::Rc;
 
 pub trait GraphBuilderBaseWithPreProcessing: GraphBuilderBase {
     fn pre_process_rows(
@@ -29,6 +30,7 @@ where
     type RowType;
     type SchemaType;
     fn from_vector(&mut self, data: Vec<Self::RowType>) -> CLQResult<Self::GraphType>;
+    fn get_schema(&self) -> Rc<Self::SchemaType>;
 }
 
 pub trait GraphBuilderBaseWithCliques: GraphBuilderBaseWithPreProcessing
