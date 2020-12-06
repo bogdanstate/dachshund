@@ -38,15 +38,8 @@ fn get_builder_with_cliques(
     )
 }
 
-fn get_seeded_rows(
-    graph_id: GraphId,
-    schema: Rc<TypedGraphSchema>,
-    raw: Vec<String>,
-    cliques: Vec<(Vec<i64>, Vec<i64>)>,
-) -> CLQResult<BTreeSet<EdgeRow>> {
-    let line_processor = TypedGraphLineProcessor::new(schema.clone());
-    let rows = raw
-        .iter()
+fn raw_to_edge_row(line_processor: &TypedGraphLineProcessor, raw: Vec<String>) -> Vec<EdgeRow> {
+    raw.iter()
         .map(|line| {
             line_processor
                 .process_line(line.clone())
@@ -55,12 +48,23 @@ fn get_seeded_rows(
                 .ok_or_else(CLQError::err_none)
                 .unwrap()
         })
-        .collect::<Vec<_>>();
+        .collect::<Vec<_>>()
+}
+
+fn get_seeded_rows(
+    graph_id: GraphId,
+    schema: Rc<TypedGraphSchema>,
+    raw: Vec<String>,
+    cliques: Vec<(Vec<i64>, Vec<i64>)>,
+) -> CLQResult<BTreeSet<EdgeRow>> {
+    let line_processor = TypedGraphLineProcessor::new(schema.clone());
+    let num_original_rows = raw.len();
+    let rows = raw_to_edge_row(&line_processor, raw);
     let mut builder_no_cliques =
         TypedGraphBuilderWithCliques::new(graph_id, Vec::new(), schema.clone());
     let mut builder_with_cliques = get_builder_with_cliques(graph_id, cliques, schema);
     let processed_rows = builder_no_cliques.pre_process_rows(rows.clone())?;
-    assert_eq!(processed_rows.len(), raw.len());
+    assert_eq!(processed_rows.len(), num_original_rows);
     let processed_rows = builder_with_cliques
         .pre_process_rows(rows)?
         .into_iter()
