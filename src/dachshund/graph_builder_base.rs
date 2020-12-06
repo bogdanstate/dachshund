@@ -32,7 +32,7 @@ where
     fn get_schema(&self) -> Rc<Self::SchemaType>;
 }
 
-pub trait GraphBuilderBaseWithGeneratedCliques: GraphBuilderBaseWithPreProcessing
+pub trait GraphBuilderBaseWithGeneratedCliques
 where
     <Self as GraphBuilderBase>::RowType: Eq,
     <Self as GraphBuilderBase>::RowType: Hash,

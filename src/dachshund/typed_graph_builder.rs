@@ -348,7 +348,6 @@ impl TypedGraphBuilderWithCliques for TypedGraphBuilderWithCliquesOverExistingGr
 }
 impl<
         T: TypedGraphBuilderWithCliques
-            + GraphBuilderBaseWithPreProcessing
             + GraphBuilderBase<SchemaType = TypedGraphSchema>
             + GraphBuilderBase<RowType = EdgeRow>,
     > GraphBuilderBaseWithGeneratedCliques for T
@@ -389,5 +388,48 @@ impl GraphBuilderBaseWithKnownCliques for TypedGraphBuilderWithCliquesOverExisti
     type CliquesType = (BTreeSet<NodeId>, BTreeSet<NodeId>);
     fn get_cliques(&self) -> &Vec<(BTreeSet<NodeId>, BTreeSet<NodeId>)> {
         &self.cliques
+    }
+}
+
+pub struct TypedGraphBuilderWithCliquesOverRandomGraph {
+    pub graph_id: GraphId,
+    pub cliques: Vec<(BTreeSet<NodeId>, BTreeSet<NodeId>)>,
+    pub non_core_type_map: HashMap<NodeId, NodeTypeId>,
+    pub schema: Rc<TypedGraphSchema>,
+}
+impl GraphBuilderBase for TypedGraphBuilderWithCliquesOverRandomGraph {
+    type GraphType = TypedGraph;
+    type RowType = EdgeRow;
+    type SchemaType = TypedGraphSchema;
+
+    fn get_schema(&self) -> Rc<Self::SchemaType> {
+        self.schema.clone()
+    }
+}
+impl TypedGraphBuilderWithCliques for TypedGraphBuilderWithCliquesOverRandomGraph {
+    fn get_non_core_type_map(&self) -> &HashMap<NodeId, NodeTypeId> {
+        &self.non_core_type_map
+    }
+    fn get_graph_id(&self) -> GraphId {
+        self.graph_id.clone()
+    }
+}
+impl TypedGraphBuilderBase for TypedGraphBuilderWithCliquesOverRandomGraph {}
+impl TypedGraphBuilderWithCliquesOverRandomGraph {
+    #[allow(dead_code)]
+    fn generate_graph(&mut self) -> CLQResult<TypedGraph> {
+        let source_ids_vec = vec![NodeId::from(0)];
+        let target_ids_vec = vec![NodeId::from(1)];
+        let non_core_type_ids = self.get_schema().get_non_core_type_ids()?;
+        let target_type_ids: HashMap<NodeId, NodeTypeId> = target_ids_vec
+            .iter()
+            .map(|x| (x.clone(), non_core_type_ids.get(0).unwrap().clone()))
+            .collect();
+        let mut node_map: HashMap<NodeId, Node> =
+            Self::init_nodes(&source_ids_vec, &target_ids_vec, &target_type_ids);
+        let edges_with_cliques = self.get_clique_edges(NodeId::from(0), NodeId::from(1))?;
+        Self::populate_edges(&edges_with_cliques, &mut node_map)?;
+        let graph = self.create_graph(node_map, source_ids_vec, target_ids_vec);
+        graph
     }
 }

@@ -111,6 +111,13 @@ impl TypedGraphSchema {
     pub fn get_core_type_id(&self) -> CLQResult<&NodeTypeId> {
         self.get_node_type_id(self.core_type.clone())
     }
+    pub fn get_non_core_type_ids(&self) -> CLQResult<Vec<NodeTypeId>> {
+        let mut non_core_types: Vec<NodeTypeId> = Vec::new();
+        for non_core_type in self.get_non_core_types() {
+            non_core_types.push(self.get_node_type_id(non_core_type)?.clone());
+        }
+        Ok(non_core_types)
+    }
     pub fn get_node_type_name(&self, non_core_type_id: &NodeTypeId) -> Option<String> {
         self.node_type_lookup.type_name(non_core_type_id)
     }
