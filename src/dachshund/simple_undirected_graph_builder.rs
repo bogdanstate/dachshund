@@ -7,16 +7,18 @@
 use crate::dachshund::error::CLQResult;
 use crate::dachshund::graph_builder_base::{
     GraphBuilderBase, GraphBuilderBaseWithCliques, GraphBuilderBaseWithPreProcessing,
+    GraphBuilderFromVector,
 };
 use crate::dachshund::graph_schema::SimpleGraphSchema;
 use crate::dachshund::id_types::NodeId;
-use crate::dachshund::node::SimpleNode;
+use crate::dachshund::simple_graph_builder::SimpleGraphBuilder;
 use crate::dachshund::simple_undirected_graph::SimpleUndirectedGraph;
 use itertools::Itertools;
 use rand::prelude::*;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeSet, HashSet};
 use std::rc::Rc;
 pub struct SimpleUndirectedGraphBuilder {}
+impl SimpleGraphBuilder for SimpleUndirectedGraphBuilder {}
 
 pub trait TSimpleUndirectedGraphBuilder:
     GraphBuilderBase<
@@ -24,6 +26,8 @@ pub trait TSimpleUndirectedGraphBuilder:
     RowType = (i64, i64),
     SchemaType = SimpleGraphSchema,
 >
+where
+    Self: GraphBuilderFromVector,
 {
     // Build a graph with n vertices with every possible edge.
     fn get_complete_graph(&mut self, n: u64) -> CLQResult<Self::GraphType> {
@@ -78,31 +82,6 @@ pub trait TSimpleUndirectedGraphBuilder:
 
         self.from_vector(v.into_iter().map(|(x, y)| (x as i64, y as i64)).collect())
     }
-    fn get_node_ids(data: &Vec<(i64, i64)>) -> BTreeMap<NodeId, BTreeSet<NodeId>> {
-        let mut ids: BTreeMap<NodeId, BTreeSet<NodeId>> = BTreeMap::new();
-        for (id1, id2) in data {
-            ids.entry(NodeId::from(*id1))
-                .or_insert_with(BTreeSet::new)
-                .insert(NodeId::from(*id2));
-            ids.entry(NodeId::from(*id2))
-                .or_insert_with(BTreeSet::new)
-                .insert(NodeId::from(*id1));
-        }
-        ids
-    }
-    fn get_nodes(ids: BTreeMap<NodeId, BTreeSet<NodeId>>) -> HashMap<NodeId, SimpleNode> {
-        let mut nodes: HashMap<NodeId, SimpleNode> = HashMap::new();
-        for (id, neighbors) in ids.into_iter() {
-            nodes.insert(
-                id,
-                SimpleNode {
-                    node_id: id,
-                    neighbors: neighbors,
-                },
-            );
-        }
-        nodes
-    }
 }
 
 impl<T: GraphBuilderBaseWithPreProcessing + TSimpleUndirectedGraphBuilder> GraphBuilderBase for T {
@@ -111,7 +90,14 @@ impl<T: GraphBuilderBaseWithPreProcessing + TSimpleUndirectedGraphBuilder> Graph
     type SchemaType = SimpleGraphSchema;
     // builds a graph from a vector of IDs. Repeated edges are ignored.
     // Edges only need to be provided once (this being an undirected graph)
+    fn get_schema(&self) -> Rc<SimpleGraphSchema> {
+        Rc::new(SimpleGraphSchema {})
+    }
+}
 
+impl<T: SimpleGraphBuilder + GraphBuilderBaseWithPreProcessing + TSimpleUndirectedGraphBuilder>
+    GraphBuilderFromVector for T
+{
     #[allow(clippy::ptr_arg)]
     fn from_vector(&mut self, data: Vec<(i64, i64)>) -> CLQResult<SimpleUndirectedGraph> {
         let data = self.pre_process_rows(data)?;
@@ -122,16 +108,13 @@ impl<T: GraphBuilderBaseWithPreProcessing + TSimpleUndirectedGraphBuilder> Graph
             nodes,
         })
     }
-
-    fn get_schema(&self) -> Rc<SimpleGraphSchema> {
-        Rc::new(SimpleGraphSchema {})
-    }
 }
 impl TSimpleUndirectedGraphBuilder for SimpleUndirectedGraphBuilder {}
 impl GraphBuilderBaseWithPreProcessing for SimpleUndirectedGraphBuilder {}
 pub struct SimpleUndirectedGraphBuilderWithCliques {
     cliques: Vec<BTreeSet<NodeId>>,
 }
+impl SimpleGraphBuilder for SimpleUndirectedGraphBuilderWithCliques {}
 impl SimpleUndirectedGraphBuilderWithCliques {
     pub fn new(cliques: Vec<BTreeSet<NodeId>>) -> Self {
         Self { cliques }

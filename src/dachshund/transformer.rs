@@ -12,7 +12,7 @@ use clap::ArgMatches;
 use crate::dachshund::beam::{TypedGraphCliqueSearchBeam, TypedGraphCliqueSearchResult};
 use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::graph_base::GraphBase;
-use crate::dachshund::graph_builder_base::GraphBuilderBase;
+use crate::dachshund::graph_builder_base::GraphBuilderFromVector;
 use crate::dachshund::id_types::GraphId;
 use crate::dachshund::line_processor::LineProcessorBase;
 use crate::dachshund::row::{CliqueRow, EdgeRow, Row};

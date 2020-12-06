@@ -6,21 +6,28 @@
  */
 extern crate nalgebra as na;
 use crate::dachshund::error::CLQResult;
-use crate::dachshund::graph_builder_base::GraphBuilderBase;
+use crate::dachshund::graph_builder_base::{GraphBuilderBase, GraphBuilderFromVector};
 use crate::dachshund::graph_schema::SimpleGraphSchema;
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::node::SimpleDirectedNode;
 use crate::dachshund::simple_directed_graph::SimpleDirectedGraph;
+use crate::dachshund::simple_graph_builder::SimpleGraphBuilder;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::rc::Rc;
 
 pub struct SimpleDirectedGraphBuilder {}
+impl SimpleGraphBuilder for SimpleDirectedGraphBuilder {}
 
 impl GraphBuilderBase for SimpleDirectedGraphBuilder {
     type GraphType = SimpleDirectedGraph;
     type RowType = (i64, i64);
     type SchemaType = SimpleGraphSchema;
 
+    fn get_schema(&self) -> Rc<Self::SchemaType> {
+        Rc::new(SimpleGraphSchema {})
+    }
+}
+impl GraphBuilderFromVector for SimpleDirectedGraphBuilder {
     // builds a graph from a vector of IDs. Repeated edges are ignored.
     #[allow(clippy::ptr_arg)]
     fn from_vector(&mut self, data: Vec<(i64, i64)>) -> CLQResult<SimpleDirectedGraph> {
@@ -50,8 +57,5 @@ impl GraphBuilderBase for SimpleDirectedGraphBuilder {
             ids: nodes.keys().cloned().collect(),
             nodes: nodes,
         })
-    }
-    fn get_schema(&self) -> Rc<Self::SchemaType> {
-        Rc::new(SimpleGraphSchema {})
     }
 }

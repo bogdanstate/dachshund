@@ -33,6 +33,7 @@ pub mod shortest_paths;
 pub mod simple_directed_graph;
 pub mod simple_directed_graph_builder;
 pub mod simple_graph;
+pub mod simple_graph_builder;
 pub mod simple_transformer;
 pub mod simple_undirected_graph;
 pub mod simple_undirected_graph_builder;

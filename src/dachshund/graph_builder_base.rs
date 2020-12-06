@@ -29,7 +29,6 @@ where
     type GraphType;
     type RowType;
     type SchemaType;
-    fn from_vector(&mut self, data: Vec<Self::RowType>) -> CLQResult<Self::GraphType>;
     fn get_schema(&self) -> Rc<Self::SchemaType>;
 }
 
@@ -46,4 +45,11 @@ where
         id2: NodeId,
     ) -> CLQResult<Vec<<Self as GraphBuilderBase>::RowType>>;
     fn get_cliques(&self) -> &Vec<Self::CliquesType>;
+}
+
+pub trait GraphBuilderFromVector: GraphBuilderBase {
+    fn from_vector(
+        &mut self,
+        data: Vec<<Self as GraphBuilderBase>::RowType>,
+    ) -> CLQResult<<Self as GraphBuilderBase>::GraphType>;
 }

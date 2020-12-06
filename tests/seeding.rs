@@ -10,7 +10,7 @@ use lib_dachshund::dachshund::beam::TypedGraphCliqueSearchBeam;
 use lib_dachshund::dachshund::error::{CLQError, CLQResult};
 use lib_dachshund::dachshund::graph_base::GraphBase;
 use lib_dachshund::dachshund::graph_builder_base::{
-    GraphBuilderBase, GraphBuilderBaseWithPreProcessing,
+    GraphBuilderBaseWithPreProcessing, GraphBuilderFromVector,
 };
 use lib_dachshund::dachshund::id_types::{GraphId, NodeId};
 use lib_dachshund::dachshund::line_processor::LineProcessorBase;

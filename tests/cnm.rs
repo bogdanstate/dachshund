@@ -7,7 +7,7 @@
 extern crate lib_dachshund;
 use lib_dachshund::dachshund::cnm_communities::CNMCommunities;
 use lib_dachshund::dachshund::error::{CLQError, CLQResult};
-use lib_dachshund::dachshund::graph_builder_base::GraphBuilderBase;
+use lib_dachshund::dachshund::graph_builder_base::GraphBuilderFromVector;
 use lib_dachshund::dachshund::simple_undirected_graph::SimpleUndirectedGraph;
 use lib_dachshund::dachshund::simple_undirected_graph_builder::SimpleUndirectedGraphBuilder;
 

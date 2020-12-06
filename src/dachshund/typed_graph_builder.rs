@@ -8,6 +8,7 @@ use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::graph_builder_base::{
     GraphBuilderBase, GraphBuilderBaseWithCliques, GraphBuilderBaseWithPreProcessing,
+    GraphBuilderFromVector,
 };
 use crate::dachshund::id_types::{EdgeTypeId, GraphId, NodeId, NodeTypeId};
 use crate::dachshund::node::NodeBase;
@@ -31,6 +32,8 @@ impl GraphBuilderBase for TypedGraphBuilder {
     fn get_schema(&self) -> Rc<Self::SchemaType> {
         self.schema.clone()
     }
+}
+impl GraphBuilderFromVector for TypedGraphBuilder {
     fn from_vector(&mut self, data: Vec<EdgeRow>) -> CLQResult<TypedGraph> {
         let mut source_ids: HashSet<NodeId> = HashSet::new();
         let mut target_ids: HashSet<NodeId> = HashSet::new();
@@ -277,7 +280,8 @@ impl GraphBuilderBase for TypedGraphBuilderWithCliques {
     fn get_schema(&self) -> Rc<Self::SchemaType> {
         self.schema.clone()
     }
-
+}
+impl GraphBuilderFromVector for TypedGraphBuilderWithCliques {
     fn from_vector(&mut self, data: Vec<EdgeRow>) -> CLQResult<TypedGraph> {
         let mut source_ids: HashSet<NodeId> = HashSet::new();
         let mut target_ids: HashSet<NodeId> = HashSet::new();

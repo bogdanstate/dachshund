@@ -11,7 +11,7 @@ extern crate test;
 
 use lib_dachshund::dachshund::clustering::Clustering;
 use lib_dachshund::dachshund::error::CLQResult;
-use lib_dachshund::dachshund::graph_builder_base::GraphBuilderBase;
+use lib_dachshund::dachshund::graph_builder_base::GraphBuilderFromVector;
 use lib_dachshund::dachshund::id_types::NodeId;
 use lib_dachshund::dachshund::simple_undirected_graph::SimpleUndirectedGraph;
 use lib_dachshund::dachshund::simple_undirected_graph_builder::{
