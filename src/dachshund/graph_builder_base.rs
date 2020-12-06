@@ -32,19 +32,21 @@ where
     fn get_schema(&self) -> Rc<Self::SchemaType>;
 }
 
-pub trait GraphBuilderBaseWithCliques: GraphBuilderBaseWithPreProcessing
+pub trait GraphBuilderBaseWithGeneratedCliques: GraphBuilderBaseWithPreProcessing
 where
     <Self as GraphBuilderBase>::RowType: Eq,
     <Self as GraphBuilderBase>::RowType: Hash,
     Self: GraphBuilderBase
 {
-    type CliquesType;
-
     fn get_clique_edges(
         &self,
         id1: NodeId,
         id2: NodeId,
     ) -> CLQResult<Vec<<Self as GraphBuilderBase>::RowType>>;
+}
+
+pub trait GraphBuilderBaseWithKnownCliques {
+    type CliquesType;
     fn get_cliques(&self) -> &Vec<Self::CliquesType>;
 }
 

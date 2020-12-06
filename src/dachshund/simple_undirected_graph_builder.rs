@@ -6,7 +6,10 @@
  */
 use crate::dachshund::error::CLQResult;
 use crate::dachshund::graph_builder_base::{
-    GraphBuilderBase, GraphBuilderBaseWithCliques, GraphBuilderBaseWithPreProcessing,
+    GraphBuilderBase,
+    GraphBuilderBaseWithGeneratedCliques,
+    GraphBuilderBaseWithKnownCliques,
+    GraphBuilderBaseWithPreProcessing,
     GraphBuilderFromVector,
 };
 use crate::dachshund::graph_schema::SimpleGraphSchema;
@@ -143,11 +146,13 @@ impl GraphBuilderBaseWithPreProcessing for SimpleUndirectedGraphBuilderWithCliqu
         Ok(rows_with_cliques)
     }
 }
-impl GraphBuilderBaseWithCliques for SimpleUndirectedGraphBuilderWithCliques {
-    type CliquesType = BTreeSet<NodeId>;
+impl GraphBuilderBaseWithGeneratedCliques for SimpleUndirectedGraphBuilderWithCliques {
     fn get_clique_edges(&self, id1: NodeId, id2: NodeId) -> CLQResult<Vec<(i64, i64)>> {
         Ok(vec![(id1.value(), id2.value())])
     }
+}
+impl GraphBuilderBaseWithKnownCliques for SimpleUndirectedGraphBuilderWithCliques {
+    type CliquesType = BTreeSet<NodeId>;
     fn get_cliques(&self) -> &Vec<BTreeSet<NodeId>> {
         &self.cliques
     }

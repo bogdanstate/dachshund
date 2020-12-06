@@ -7,7 +7,10 @@
 use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::graph_builder_base::{
-    GraphBuilderBase, GraphBuilderBaseWithCliques, GraphBuilderBaseWithPreProcessing,
+    GraphBuilderBase,
+    GraphBuilderBaseWithGeneratedCliques,
+    GraphBuilderBaseWithKnownCliques,
+    GraphBuilderBaseWithPreProcessing,
     GraphBuilderFromVector,
 };
 use crate::dachshund::id_types::{EdgeTypeId, GraphId, NodeId, NodeTypeId};
@@ -355,9 +358,7 @@ impl TypedGraphBuilderWithCliques for TypedGraphBuilderWithCliquesOverExistingGr
     }
 }
 
-impl GraphBuilderBaseWithCliques for TypedGraphBuilderWithCliquesOverExistingGraph {
-    type CliquesType = (BTreeSet<NodeId>, BTreeSet<NodeId>);
-
+impl GraphBuilderBaseWithGeneratedCliques for TypedGraphBuilderWithCliquesOverExistingGraph {
     fn get_clique_edges(&self, id1: NodeId, id2: NodeId) -> CLQResult<Vec<EdgeRow>> {
         let source_type_id = self.get_schema().get_core_type_id()?.clone();
         let target_type_id = self
@@ -385,6 +386,9 @@ impl GraphBuilderBaseWithCliques for TypedGraphBuilderWithCliquesOverExistingGra
             })
             .collect())
     }
+}
+impl GraphBuilderBaseWithKnownCliques for TypedGraphBuilderWithCliquesOverExistingGraph {
+    type CliquesType = (BTreeSet<NodeId>, BTreeSet<NodeId>);
     fn get_cliques(&self) -> &Vec<(BTreeSet<NodeId>, BTreeSet<NodeId>)> {
         &self.cliques
     }
