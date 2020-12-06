@@ -15,13 +15,16 @@ use crate::dachshund::connectivity::ConnectivityUndirected;
 use crate::dachshund::coreness::Coreness;
 use crate::dachshund::eigenvector_centrality::EigenvectorCentrality;
 use crate::dachshund::graph_base::GraphBase;
+use crate::dachshund::graph_schema::SimpleGraphSchema;
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::laplacian::Laplacian;
 use crate::dachshund::node::{NodeBase, NodeEdgeBase, SimpleNode};
 use crate::dachshund::shortest_paths::ShortestPaths;
+use crate::dachshund::simple_graph::SimpleGraph;
 use crate::dachshund::transitivity::Transitivity;
 use std::collections::hash_map::{Keys, Values};
 use std::collections::HashMap;
+use std::rc::Rc;
 
 pub trait UndirectedGraph
 where
@@ -33,8 +36,18 @@ pub struct SimpleUndirectedGraph {
     pub nodes: HashMap<NodeId, SimpleNode>,
     pub ids: Vec<NodeId>,
 }
+impl UndirectedGraph for SimpleUndirectedGraph {}
+impl SimpleGraph for SimpleUndirectedGraph {
+    fn create_empty() -> Self {
+        SimpleUndirectedGraph {
+            nodes: HashMap::new(),
+            ids: Vec::new(),
+        }
+    }
+}
 impl GraphBase for SimpleUndirectedGraph {
     type NodeType = SimpleNode;
+    type SchemaType = SimpleGraphSchema;
 
     /// core and non-core IDs are the same for a `SimpleUndirectedGraph`.
     fn get_core_ids(&self) -> &Vec<NodeId> {
@@ -69,11 +82,8 @@ impl GraphBase for SimpleUndirectedGraph {
     fn count_nodes(&self) -> usize {
         self.nodes.len()
     }
-    fn create_empty() -> Self {
-        SimpleUndirectedGraph {
-            nodes: HashMap::new(),
-            ids: Vec::new(),
-        }
+    fn get_schema(&self) -> Rc<SimpleGraphSchema> {
+        Rc::new(SimpleGraphSchema {})
     }
 }
 impl SimpleUndirectedGraph {
@@ -97,8 +107,6 @@ impl SimpleUndirectedGraph {
         self.nodes[&id].degree()
     }
 }
-impl UndirectedGraph for SimpleUndirectedGraph {}
-
 impl CNMCommunities for SimpleUndirectedGraph {}
 impl ConnectedComponents for SimpleUndirectedGraph {}
 impl ConnectedComponentsUndirected for SimpleUndirectedGraph {}

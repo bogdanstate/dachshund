@@ -8,8 +8,10 @@ extern crate nalgebra as na;
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::node::Node;
+use crate::dachshund::typed_graph_schema::TypedGraphSchema;
 use std::collections::hash_map::{Keys, Values};
 use std::collections::HashMap;
+use std::rc::Rc;
 
 /// Keeps track of a bipartite graph composed of "core" and "non-core" nodes. Only core ->
 /// non-core connections may exist in the graph. The neighbors of core nodes are non-cores, the
@@ -21,9 +23,11 @@ pub struct TypedGraph {
     pub nodes: HashMap<NodeId, Node>,
     pub core_ids: Vec<NodeId>,
     pub non_core_ids: Vec<NodeId>,
+    pub schema: Rc<TypedGraphSchema>,
 }
 impl GraphBase for TypedGraph {
     type NodeType = Node;
+    type SchemaType = TypedGraphSchema;
 
     fn get_core_ids(&self) -> &Vec<NodeId> {
         &self.core_ids
@@ -56,11 +60,7 @@ impl GraphBase for TypedGraph {
     fn count_nodes(&self) -> usize {
         self.nodes.len()
     }
-    fn create_empty() -> Self {
-        TypedGraph {
-            nodes: HashMap::new(),
-            core_ids: Vec::new(),
-            non_core_ids: Vec::new(),
-        }
+    fn get_schema(&self) -> Rc<Self::SchemaType> {
+        self.schema.clone()
     }
 }

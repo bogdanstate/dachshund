@@ -9,17 +9,17 @@ use crate::lib_dachshund::dachshund::typed_graph_builder::TypedGraphBuilderBase;
 use lib_dachshund::dachshund::candidate::Candidate;
 use lib_dachshund::dachshund::error::{CLQError, CLQResult};
 use lib_dachshund::dachshund::id_types::{GraphId, NodeId};
+use lib_dachshund::dachshund::search_problem::SearchProblem;
 use lib_dachshund::dachshund::test_utils::{
     assert_nodes_have_ids, gen_test_transformer, process_raw_vector,
 };
-use lib_dachshund::dachshund::search_problem::SearchProblem;
 use lib_dachshund::dachshund::transformer::Transformer;
 use lib_dachshund::dachshund::typed_graph::TypedGraph;
 use lib_dachshund::dachshund::typed_graph_builder::TypedGraphBuilder;
 use lib_dachshund::dachshund::typed_graph_schema::TypedGraphSchema;
 use std::collections::HashSet;
-use std::sync::mpsc::channel;
 use std::rc::Rc;
+use std::sync::mpsc::channel;
 
 pub fn gen_test_typespec() -> Vec<Vec<String>> {
     return vec![
@@ -98,11 +98,18 @@ fn test_prune_small_clique() -> CLQResult<()> {
     ];
     let graph_id: GraphId = 0.into();
 
-    let transformer = gen_test_transformer(ts, "author".to_string())?;
+    let transformer = gen_test_transformer(ts.clone(), "author".to_string())?;
     let rows = process_raw_vector(&transformer, raw)?;
     let mut graph: TypedGraph = transformer.build_pruned_graph(graph_id, rows.clone())?;
     assert_eq!(graph.nodes.len(), 5);
-    graph = TypedGraphBuilder::prune(graph, &rows, 2)?;
+    
+    let schema = Rc::new(TypedGraphSchema::new(ts.clone(), "author".into())?);
+    let builder = TypedGraphBuilder{
+        min_degree: Some(2),
+        graph_id: GraphId::from(1),
+        schema: schema,
+    };
+    graph = builder.prune(graph, &rows, 2)?;
     assert_eq!(graph.nodes.len(), 4);
     let v = Vec::new();
     let res: Candidate<TypedGraph> = transformer
@@ -148,13 +155,8 @@ fn test_full_prune_small_clique() -> CLQResult<()> {
         3,
     ));
     let schema = Rc::new(TypedGraphSchema::new(ts.clone(), "author".into())?);
-    
-    let transformer_prune = Transformer::new(
-        schema,
-        search_problem,
-        true,
-        false,
-    )?;
+
+    let transformer_prune = Transformer::new(schema, search_problem, true, false)?;
     let rows_prune = process_raw_vector(&transformer_prune, raw.clone())?;
 
     let graph: TypedGraph = transformer_prune.build_pruned_graph(graph_id, rows_prune)?;
@@ -180,13 +182,8 @@ fn test_full_prune_small_clique() -> CLQResult<()> {
         0,
     ));
     let schema = Rc::new(TypedGraphSchema::new(ts, "author".into())?);
-    
-    let transformer = Transformer::new(
-        schema,
-        search_problem,
-        true,
-        false,
-    )?;
+
+    let transformer = Transformer::new(schema, search_problem, true, false)?;
     let rows = process_raw_vector(&transformer, raw)?;
 
     let graph: TypedGraph = transformer.build_pruned_graph(graph_id, rows)?;

@@ -10,7 +10,7 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::rc::Rc;
 
-use lib_dachshund::dachshund::beam::Beam;
+use lib_dachshund::dachshund::beam::TypedGraphCliqueSearchBeam;
 use lib_dachshund::dachshund::candidate::Candidate;
 use lib_dachshund::dachshund::error::{CLQError, CLQResult};
 use lib_dachshund::dachshund::id_types::{GraphId, NodeId, NodeTypeId};
@@ -18,10 +18,10 @@ use lib_dachshund::dachshund::input::Input;
 use lib_dachshund::dachshund::output::Output;
 use lib_dachshund::dachshund::row::CliqueRow;
 use lib_dachshund::dachshund::row::EdgeRow;
+use lib_dachshund::dachshund::search_problem::SearchProblem;
 use lib_dachshund::dachshund::test_utils::{
     assert_nodes_have_ids, gen_test_transformer, process_raw_vector,
 };
-use lib_dachshund::dachshund::search_problem::SearchProblem;
 use lib_dachshund::dachshund::transformer::Transformer;
 use lib_dachshund::dachshund::transformer_base::TransformerBase;
 use lib_dachshund::dachshund::typed_graph::TypedGraph;
@@ -45,8 +45,7 @@ fn test_init_beam_with_clique_rows() -> CLQResult<()> {
     let graph_id: GraphId = 0.into();
     let transformer: Transformer = gen_test_transformer(typespec, "author".to_string())?;
     let rows: Vec<EdgeRow> = process_raw_vector(&transformer, raw)?;
-    let article_type: NodeTypeId =
-    *transformer.schema.get_node_type_id("article".to_string())?;
+    let article_type: NodeTypeId = *transformer.schema.get_node_type_id("article".to_string())?;
     assert_eq!(article_type.value(), 1);
     let clique_rows: Vec<CliqueRow> = vec![
         CliqueRow::new(graph_id, 1, None),
@@ -59,7 +58,7 @@ fn test_init_beam_with_clique_rows() -> CLQResult<()> {
         .non_core_type
         .ok_or_else(CLQError::err_none)?;
 
-    let beam: Beam<TypedGraph> = Beam::new(
+    let beam = TypedGraphCliqueSearchBeam::new(
         &graph,
         &clique_rows,
         false,
@@ -101,7 +100,7 @@ fn test_init_beam_with_partially_overlapping_clique_rows() -> CLQResult<()> {
         CliqueRow::new(graph_id, 7, Some(article_type)),
     ];
     let graph: TypedGraph = transformer.build_pruned_graph(graph_id, rows)?;
-    let beam: Beam<TypedGraph> = Beam::new(
+    let beam = TypedGraphCliqueSearchBeam::new(
         &graph,
         &clique_rows,
         false,
@@ -150,15 +149,10 @@ fn test_init_beam_with_clique_rows_input() -> CLQResult<()> {
             20,
             0,
             3,
-            10,
+            0,
         ));
-        let schema = Rc::new(TypedGraphSchema::new(typespec, "author".into())?); 
-        let mut transformer = Transformer::new(
-            schema,
-            search_problem,
-            true,
-            true,
-        )?;
+        let schema = Rc::new(TypedGraphSchema::new(typespec, "author".into())?);
+        let mut transformer = Transformer::new(schema, search_problem, true, true)?;
         let text = raw.join("\n");
         let bytes = text.as_bytes();
         let input = Input::string(&bytes);
@@ -205,15 +199,10 @@ fn test_init_beam_with_clique_rows_input_one_epoch() -> CLQResult<()> {
         20,
         1,
         3,
-        10,
+        0,
     ));
-    let schema = Rc::new(TypedGraphSchema::new(typespec, "author".into())?); 
-    let mut transformer = Transformer::new(
-        schema,
-        search_problem,
-        true,
-        true,
-    )?;
+    let schema = Rc::new(TypedGraphSchema::new(typespec, "author".into())?);
+    let mut transformer = Transformer::new(schema, search_problem, true, true)?;
     let text = raw.join("\n");
     let bytes = text.as_bytes();
     let input = Input::string(&bytes);
@@ -251,13 +240,8 @@ fn test_beam_with_empty_graph_after_pruning() -> CLQResult<()> {
         3,
         10,
     ));
-    let schema = Rc::new(TypedGraphSchema::new(typespec, "author".into())?); 
-    let mut transformer = Transformer::new(
-        schema,
-        search_problem,
-        true,
-        true,
-    )?;
+    let schema = Rc::new(TypedGraphSchema::new(typespec, "author".into())?);
+    let mut transformer = Transformer::new(schema, search_problem, true, true)?;
     let text = raw.join("\n");
     let bytes = text.as_bytes();
     let input = Input::string(&bytes);

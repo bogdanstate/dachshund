@@ -8,16 +8,22 @@ use crate::dachshund::error::CLQResult;
 use crate::dachshund::graph_builder_base::{
     GraphBuilderBase, GraphBuilderBaseWithCliques, GraphBuilderBaseWithPreProcessing,
 };
+use crate::dachshund::graph_schema::SimpleGraphSchema;
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::node::SimpleNode;
 use crate::dachshund::simple_undirected_graph::SimpleUndirectedGraph;
 use itertools::Itertools;
 use rand::prelude::*;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::rc::Rc;
 pub struct SimpleUndirectedGraphBuilder {}
 
 pub trait TSimpleUndirectedGraphBuilder:
-    GraphBuilderBase<GraphType = SimpleUndirectedGraph, RowType = (i64, i64)>
+    GraphBuilderBase<
+    GraphType = SimpleUndirectedGraph,
+    RowType = (i64, i64),
+    SchemaType = SimpleGraphSchema,
+>
 {
     // Build a graph with n vertices with every possible edge.
     fn get_complete_graph(&mut self, n: u64) -> CLQResult<Self::GraphType> {
@@ -102,6 +108,7 @@ pub trait TSimpleUndirectedGraphBuilder:
 impl<T: GraphBuilderBaseWithPreProcessing + TSimpleUndirectedGraphBuilder> GraphBuilderBase for T {
     type GraphType = SimpleUndirectedGraph;
     type RowType = (i64, i64);
+    type SchemaType = SimpleGraphSchema;
     // builds a graph from a vector of IDs. Repeated edges are ignored.
     // Edges only need to be provided once (this being an undirected graph)
 
@@ -114,6 +121,10 @@ impl<T: GraphBuilderBaseWithPreProcessing + TSimpleUndirectedGraphBuilder> Graph
             ids: nodes.keys().cloned().collect(),
             nodes,
         })
+    }
+
+    fn get_schema(&self) -> Rc<SimpleGraphSchema> {
+        Rc::new(SimpleGraphSchema {})
     }
 }
 impl TSimpleUndirectedGraphBuilder for SimpleUndirectedGraphBuilder {}

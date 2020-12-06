@@ -4,27 +4,33 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::graph_builder_base::{
     GraphBuilderBase, GraphBuilderBaseWithCliques, GraphBuilderBaseWithPreProcessing,
 };
-use crate::dachshund::node::NodeBase;
-use crate::dachshund::typed_graph::TypedGraph;
-
-use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::id_types::{EdgeTypeId, GraphId, NodeId, NodeTypeId};
+use crate::dachshund::node::NodeBase;
 use crate::dachshund::node::{Node, NodeEdge};
 use crate::dachshund::row::EdgeRow;
+use crate::dachshund::typed_graph::TypedGraph;
+use crate::dachshund::typed_graph_schema::TypedGraphSchema;
 use std::collections::{BTreeSet, HashMap, HashSet};
+use std::rc::Rc;
 
 pub struct TypedGraphBuilder {
     pub min_degree: Option<usize>,
     pub graph_id: GraphId,
+    pub schema: Rc<TypedGraphSchema>,
 }
 impl GraphBuilderBase for TypedGraphBuilder {
     type GraphType = TypedGraph;
     type RowType = EdgeRow;
+    type SchemaType = TypedGraphSchema;
 
+    fn get_schema(&self) -> Rc<Self::SchemaType> {
+        self.schema.clone()
+    }
     fn from_vector(&mut self, data: Vec<EdgeRow>) -> CLQResult<TypedGraph> {
         let mut source_ids: HashSet<NodeId> = HashSet::new();
         let mut target_ids: HashSet<NodeId> = HashSet::new();
@@ -45,16 +51,18 @@ impl GraphBuilderBase for TypedGraphBuilder {
         let mut node_map: HashMap<NodeId, Node> =
             Self::init_nodes(&source_ids_vec, &target_ids_vec, &target_type_ids);
         Self::populate_edges(&data, &mut node_map)?;
-        let mut graph = Self::create_graph(node_map, source_ids_vec, target_ids_vec)?;
+        let mut graph = self.create_graph(node_map, source_ids_vec, target_ids_vec)?;
         if let Some(min_degree) = self.min_degree {
-            graph = Self::prune(graph, &data, min_degree)?;
+            graph = self.prune(graph, &data, min_degree)?;
         }
         Ok(graph)
     }
 }
 
-pub trait TypedGraphBuilderBase {
+pub trait TypedGraphBuilderBase: GraphBuilderBase<SchemaType =
+TypedGraphSchema> {
     fn create_graph(
+        &self,
         nodes: HashMap<NodeId, Node>,
         core_ids: Vec<NodeId>,
         non_core_ids: Vec<NodeId>,
@@ -63,6 +71,7 @@ pub trait TypedGraphBuilderBase {
             nodes,
             core_ids,
             non_core_ids,
+            schema: self.get_schema().clone(),
         })
     }
 
@@ -182,7 +191,7 @@ pub trait TypedGraphBuilderBase {
     /// new graph, where all nodes are assured to have degree at least min_degree.
     /// The provision of a TypedGraph is necessary, since the notion of "degree" does
     /// not make sense outside of a graph.
-    fn prune(graph: TypedGraph, rows: &Vec<EdgeRow>, min_degree: usize) -> CLQResult<TypedGraph> {
+    fn prune(&self, graph: TypedGraph, rows: &Vec<EdgeRow>, min_degree: usize) -> CLQResult<TypedGraph> {
         let mut target_type_ids: HashMap<NodeId, NodeTypeId> = HashMap::new();
         for r in rows.iter() {
             target_type_ids.insert(r.target_id, r.target_type_id);
@@ -195,7 +204,7 @@ pub trait TypedGraphBuilderBase {
         let mut filtered_node_map: HashMap<NodeId, Node> =
             Self::init_nodes(&filtered_source_ids, &filtered_target_ids, &target_type_ids);
         Self::populate_edges(&filtered_rows, &mut filtered_node_map)?;
-        Self::create_graph(filtered_node_map, filtered_source_ids, filtered_target_ids)
+        self.create_graph(filtered_node_map, filtered_source_ids, filtered_target_ids)
     }
     /// called by `prune`, finds source and target nodes to exclude, as well as edges to exclude
     /// when rebuilding the graph from a filtered vector of `EdgeRows`.
@@ -237,6 +246,7 @@ pub struct TypedGraphBuilderWithCliques {
     pub core_type_id: NodeTypeId,
     pub non_core_type_map: HashMap<NodeId, NodeTypeId>,
     pub edge_type_map: HashMap<(NodeTypeId, NodeTypeId), Vec<EdgeTypeId>>,
+    pub schema: Rc<TypedGraphSchema>,
 }
 impl TypedGraphBuilderWithCliques {
     #[allow(dead_code)]
@@ -244,6 +254,7 @@ impl TypedGraphBuilderWithCliques {
         graph_id: GraphId,
         cliques: Vec<(BTreeSet<NodeId>, BTreeSet<NodeId>)>,
         core_type_id: NodeTypeId,
+        schema: Rc<TypedGraphSchema>,
     ) -> Self {
         Self {
             graph_id,
@@ -251,6 +262,7 @@ impl TypedGraphBuilderWithCliques {
             core_type_id,
             non_core_type_map: HashMap::new(),
             edge_type_map: HashMap::new(),
+            schema: schema,
         }
     }
 }
@@ -258,6 +270,11 @@ impl TypedGraphBuilderBase for TypedGraphBuilderWithCliques {}
 impl GraphBuilderBase for TypedGraphBuilderWithCliques {
     type GraphType = TypedGraph;
     type RowType = EdgeRow;
+    type SchemaType = TypedGraphSchema;
+
+    fn get_schema(&self) -> Rc<Self::SchemaType> {
+        self.schema.clone()
+    }
 
     fn from_vector(&mut self, data: Vec<EdgeRow>) -> CLQResult<TypedGraph> {
         let mut source_ids: HashSet<NodeId> = HashSet::new();
@@ -279,7 +296,7 @@ impl GraphBuilderBase for TypedGraphBuilderWithCliques {
         let mut node_map: HashMap<NodeId, Node> =
             Self::init_nodes(&source_ids_vec, &target_ids_vec, &target_type_ids);
         Self::populate_edges(&data, &mut node_map)?;
-        let graph = Self::create_graph(node_map, source_ids_vec, target_ids_vec)?;
+        let graph = self.create_graph(node_map, source_ids_vec, target_ids_vec)?;
         Ok(graph)
     }
 }

@@ -8,10 +8,13 @@ use crate::dachshund::brokerage::Brokerage;
 use crate::dachshund::connected_components::{ConnectedComponents, ConnectedComponentsDirected};
 use crate::dachshund::connectivity::{Connectivity, ConnectivityDirected};
 use crate::dachshund::graph_base::GraphBase;
+use crate::dachshund::graph_schema::SimpleGraphSchema;
 use crate::dachshund::id_types::NodeId;
 use crate::dachshund::node::{DirectedNodeBase, NodeBase, SimpleDirectedNode};
+use crate::dachshund::simple_graph::SimpleGraph;
 use std::collections::hash_map::{Keys, Values};
 use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
 
 pub trait DirectedGraph
 where
@@ -42,8 +45,18 @@ pub struct SimpleDirectedGraph {
     pub nodes: HashMap<NodeId, SimpleDirectedNode>,
     pub ids: Vec<NodeId>,
 }
+impl DirectedGraph for SimpleDirectedGraph {}
+impl SimpleGraph for SimpleDirectedGraph {
+    fn create_empty() -> Self {
+        SimpleDirectedGraph {
+            nodes: HashMap::new(),
+            ids: Vec::new(),
+        }
+    }
+}
 impl GraphBase for SimpleDirectedGraph {
     type NodeType = SimpleDirectedNode;
+    type SchemaType = SimpleGraphSchema;
 
     /// core and non-core IDs are the same for a `SimpleDirectedGraph`.
     fn get_core_ids(&self) -> &Vec<NodeId> {
@@ -79,14 +92,11 @@ impl GraphBase for SimpleDirectedGraph {
     fn count_nodes(&self) -> usize {
         self.nodes.len()
     }
-    fn create_empty() -> Self {
-        SimpleDirectedGraph {
-            nodes: HashMap::new(),
-            ids: Vec::new(),
-        }
+    fn get_schema(&self) -> Rc<SimpleGraphSchema> {
+        Rc::new(SimpleGraphSchema {})
     }
 }
-impl DirectedGraph for SimpleDirectedGraph {}
+
 impl Brokerage for SimpleDirectedGraph {}
 impl ConnectedComponents for SimpleDirectedGraph {}
 impl ConnectedComponentsDirected for SimpleDirectedGraph {}

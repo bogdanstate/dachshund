@@ -7,6 +7,7 @@
 extern crate clap;
 extern crate serde_json;
 use crate::dachshund::error::CLQResult;
+use crate::dachshund::graph_schema::GraphSchema;
 use crate::dachshund::id_types::{EdgeTypeId, NodeTypeId};
 use crate::dachshund::type_ids_lookup::TypeIdsLookup;
 use std::collections::BTreeSet;
@@ -19,6 +20,15 @@ pub struct TypedGraphSchema {
     core_type: String,
 }
 impl TypedGraphSchema {
+    pub fn empty() -> Self {
+        Self {
+            node_type_lookup: TypeIdsLookup::<NodeTypeId>::new(),
+            edge_type_lookup: TypeIdsLookup::<EdgeTypeId>::new(),
+            non_core_types: Vec::new(),
+            num_non_core_types: 0,
+            core_type: "".to_string(),
+        }
+    }
     /// processes a "typespec", a command-line argument, of the form:
     /// [["author", "published_in", "journal"], ["author", "co-authored", "article"]].
     /// This sets up the semantics related to the set of relations contained in the
@@ -89,3 +99,5 @@ impl TypedGraphSchema {
         self.node_type_lookup.type_name(non_core_type_id)
     }
 }
+
+impl GraphSchema for TypedGraphSchema {}

@@ -9,7 +9,7 @@ extern crate serde_json;
 
 use clap::ArgMatches;
 
-use crate::dachshund::beam::{Beam, BeamSearchResult};
+use crate::dachshund::beam::{TypedGraphCliqueSearchBeam, TypedGraphCliqueSearchResult};
 use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::graph_builder_base::GraphBuilderBase;
@@ -79,7 +79,7 @@ impl Transformer {
     ///     This sets up the semantics related to the set of relations contained in the
     ///     typed graph. A requirement is that all relations share a "core" type, in this
     ///     case, "author".
-    ///     - `beam_size`: Beam construction parameter. The number of top candidates to
+    ///     - `beam_size`: TypedGraphCliqueSearchBeam construction parameter. The number of top candidates to
     ///     maintain as potential future cores for expansion in the "beam" (i.e., the list of top candidates).
     ///     - `alpha`: `Scorer` constructor parameter. Controls the contribution of density
     ///     - `global_thresh`: `Scorer` constructor parameter. If provided, candidates must be at
@@ -106,7 +106,6 @@ impl Transformer {
         debug: bool,
         long_format: bool,
     ) -> CLQResult<Self> {
-
         let line_processor = Arc::new(TypedGraphLineProcessor::new(schema.clone()));
         let transformer = Self {
             schema,
@@ -141,7 +140,7 @@ impl Transformer {
         let min_degree: usize = arg_value("min_degree")?.parse::<usize>()?;
         let core_type: String = arg_value("core_type")?.parse::<String>()?;
         let long_format: bool = arg_value("long_format")?.parse::<bool>()?;
-        
+
         let search_problem = Rc::new(SearchProblem::new(
             beam_size,
             alpha,
@@ -153,13 +152,8 @@ impl Transformer {
             min_degree,
         ));
         let schema = Rc::new(TypedGraphSchema::new(typespec, core_type)?);
-        
-        let transformer = Transformer::new(
-            schema,
-            search_problem,
-            debug,
-            long_format,
-        )?;
+
+        let transformer = Transformer::new(schema, search_problem, debug, long_format)?;
         Ok(transformer)
     }
 
@@ -175,6 +169,7 @@ impl Transformer {
         TypedGraphBuilder {
             graph_id,
             min_degree: Some(self.search_problem.min_degree),
+            schema: self.schema.clone(),
         }
         .from_vector(rows)
     }
@@ -186,8 +181,8 @@ impl Transformer {
         clique_rows: &'a Vec<CliqueRow>,
         graph_id: GraphId,
         verbose: bool,
-    ) -> CLQResult<BeamSearchResult<'a, TypedGraph>> {
-        let mut beam: Beam<TypedGraph> = Beam::new(
+    ) -> CLQResult<TypedGraphCliqueSearchResult<'a>> {
+        let mut beam = TypedGraphCliqueSearchBeam::new(
             graph,
             clique_rows,
             verbose,
@@ -207,7 +202,7 @@ impl Transformer {
         graph_id: GraphId,
         verbose: bool,
         output: &Sender<(Option<String>, bool)>,
-    ) -> CLQResult<Option<BeamSearchResult<'a, TypedGraph>>> {
+    ) -> CLQResult<Option<TypedGraphCliqueSearchResult<'a>>> {
         if graph.get_core_ids().is_empty() || graph.get_non_core_ids().unwrap().is_empty() {
             // still have to send an acknowledgement to the output channel
             // that we have actually processed this graph, otherwise
@@ -216,8 +211,7 @@ impl Transformer {
             output.send((None, false)).unwrap();
             return Ok(None);
         }
-        let result: BeamSearchResult<TypedGraph> =
-            self.process_graph(graph, clique_rows, graph_id, verbose)?;
+        let result = self.process_graph(graph, clique_rows, graph_id, verbose)?;
         // only print if this is a conforming clique
         if result.top_candidate.get_score()? > 0.0 {
             if !self.long_format {
