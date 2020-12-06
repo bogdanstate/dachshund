@@ -297,7 +297,8 @@ impl GraphBuilderBase for TypedGraphBuilderWithCliques {
 
         let mut node_map: HashMap<NodeId, Node> =
             Self::init_nodes(&source_ids_vec, &target_ids_vec, &target_type_ids);
-        Self::populate_edges(&data, &mut node_map)?;
+        let edges_with_cliques = self.pre_process_rows(data)?;
+        Self::populate_edges(&edges_with_cliques, &mut node_map)?;
         let graph = self.create_graph(node_map, source_ids_vec, target_ids_vec)?;
         Ok(graph)
     }

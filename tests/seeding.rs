@@ -7,10 +7,12 @@
 extern crate lib_dachshund;
 
 use lib_dachshund::dachshund::error::{CLQError, CLQResult};
-use lib_dachshund::dachshund::graph_builder_base::GraphBuilderBaseWithPreProcessing;
+use lib_dachshund::dachshund::graph_base::{GraphBase};
+use lib_dachshund::dachshund::graph_builder_base::{GraphBuilderBase, GraphBuilderBaseWithPreProcessing};
 use lib_dachshund::dachshund::id_types::{GraphId, NodeId};
 use lib_dachshund::dachshund::line_processor::LineProcessorBase;
 use lib_dachshund::dachshund::row::EdgeRow;
+use lib_dachshund::dachshund::typed_graph::TypedGraph;
 use lib_dachshund::dachshund::typed_graph_builder::TypedGraphBuilderWithCliques;
 use lib_dachshund::dachshund::typed_graph_line_processor::TypedGraphLineProcessor;
 use lib_dachshund::dachshund::typed_graph_schema::TypedGraphSchema;
@@ -20,7 +22,7 @@ use std::rc::Rc;
 
 fn get_builder_with_cliques(
     graph_id: GraphId,
-    cliques: Vec<(Vec<i64>, Vec<i64>)>,
+    cliques: &Vec<(Vec<i64>, Vec<i64>)>,
     schema: Rc<TypedGraphSchema>,
 ) -> TypedGraphBuilderWithCliques {
     TypedGraphBuilderWithCliques::new(
@@ -29,8 +31,8 @@ fn get_builder_with_cliques(
             .into_iter()
             .map(|(x1, x2)| {
                 (
-                    x1.into_iter().map(|x| NodeId::from(x)).collect(),
-                    x2.into_iter().map(|x| NodeId::from(x)).collect(),
+                    x1.into_iter().map(|x| NodeId::from(x.clone())).collect(),
+                    x2.into_iter().map(|x| NodeId::from(x.clone())).collect(),
                 )
             })
             .collect(),
@@ -38,7 +40,7 @@ fn get_builder_with_cliques(
     )
 }
 
-fn raw_to_edge_row(line_processor: &TypedGraphLineProcessor, raw: Vec<String>) -> Vec<EdgeRow> {
+fn raw_to_edge_row(line_processor: &TypedGraphLineProcessor, raw: &Vec<String>) -> Vec<EdgeRow> {
     raw.iter()
         .map(|line| {
             line_processor
@@ -54,8 +56,8 @@ fn raw_to_edge_row(line_processor: &TypedGraphLineProcessor, raw: Vec<String>) -
 fn get_seeded_rows(
     graph_id: GraphId,
     schema: Rc<TypedGraphSchema>,
-    raw: Vec<String>,
-    cliques: Vec<(Vec<i64>, Vec<i64>)>,
+    raw: &Vec<String>,
+    cliques: &Vec<(Vec<i64>, Vec<i64>)>,
 ) -> CLQResult<BTreeSet<EdgeRow>> {
     let line_processor = TypedGraphLineProcessor::new(schema.clone());
     let num_original_rows = raw.len();
@@ -70,6 +72,18 @@ fn get_seeded_rows(
         .into_iter()
         .collect::<BTreeSet<_>>();
     Ok(processed_rows)
+}
+
+fn get_seeded_graph(
+    graph_id: GraphId,
+    schema: Rc<TypedGraphSchema>,
+    raw: &Vec<String>,
+    cliques: &Vec<(Vec<i64>, Vec<i64>)>,
+) -> CLQResult<TypedGraph> {
+    let line_processor = TypedGraphLineProcessor::new(schema.clone());
+    let rows = raw_to_edge_row(&line_processor, raw);
+    let mut builder = get_builder_with_cliques(graph_id, cliques, schema);
+    builder.from_vector(rows)
 }
 
 #[cfg(test)]
@@ -88,13 +102,19 @@ fn test_typed_graph_seeding() -> CLQResult<()> {
     ];
     let num_original_rows = raw.len();
     let schema = Rc::new(TypedGraphSchema::new(typespec, "author".to_string())?);
+    let cliques = vec![
+            (vec![1, 2, 3], vec![5, 6, 7]),
+    ];
     let processed_rows = get_seeded_rows(
         GraphId::from(0),
-        schema,
-        raw,
-        vec![(vec![1, 2, 3], vec![5, 6, 7])],
+        schema.clone(),
+        &raw,
+        &cliques,
     )?;
     assert_eq!(processed_rows.len(), num_original_rows + 9 * 2 - 3);
+
+    let graph = get_seeded_graph(GraphId::from(0), schema, &raw, &cliques)?;
+    assert_eq!(graph.count_edges() / 2, processed_rows.len());
     Ok(())
 }
 
@@ -116,14 +136,15 @@ fn test_typed_graph_seeding_two_cliques() -> CLQResult<()> {
     ];
     let num_original_rows = raw.len();
     let schema = Rc::new(TypedGraphSchema::new(typespec, "author".to_string())?);
+    let cliques = vec![
+            (vec![1, 2, 3], vec![5, 6, 7]),
+            (vec![3, 4], vec![9, 10, 11]),
+    ];
     let processed_rows = get_seeded_rows(
         GraphId::from(0),
         schema,
-        raw,
-        vec![
-            (vec![1, 2, 3], vec![5, 6, 7]),
-            (vec![3, 4], vec![9, 10, 11]),
-        ],
+        &raw,
+        &cliques,
     )?;
     assert_eq!(
         processed_rows.len(),
