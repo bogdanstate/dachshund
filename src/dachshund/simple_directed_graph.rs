@@ -14,6 +14,7 @@ use crate::dachshund::node::{DirectedNodeBase, NodeBase, SimpleDirectedNode};
 use crate::dachshund::simple_graph::SimpleGraph;
 use std::collections::hash_map::{Keys, Values};
 use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
 
 pub trait DirectedGraph
 where
@@ -90,6 +91,9 @@ impl GraphBase for SimpleDirectedGraph {
     }
     fn count_nodes(&self) -> usize {
         self.nodes.len()
+    }
+    fn get_schema(&self) -> Rc<SimpleGraphSchema> {
+        Rc::new(SimpleGraphSchema {})
     }
 }
 

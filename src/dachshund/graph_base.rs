@@ -9,6 +9,7 @@ use crate::dachshund::id_types::NodeId;
 use crate::dachshund::node::NodeBase;
 use std::collections::hash_map::{Keys, Values};
 use std::collections::HashMap;
+use std::rc::Rc;
 
 /// General-purpose trait which indicates the minimum amount of shared context
 /// required between all graph objects. Currently built to accommodate a graph
@@ -37,4 +38,5 @@ where
         node_ids.sort();
         node_ids
     }
+    fn get_schema(&self) -> Rc<Self::SchemaType>;
 }

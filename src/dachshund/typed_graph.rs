@@ -60,4 +60,7 @@ impl GraphBase for TypedGraph {
     fn count_nodes(&self) -> usize {
         self.nodes.len()
     }
+    fn get_schema(&self) -> Rc<Self::SchemaType> {
+        self.schema.clone()
+    }
 }

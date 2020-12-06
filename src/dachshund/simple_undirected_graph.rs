@@ -24,6 +24,7 @@ use crate::dachshund::simple_graph::SimpleGraph;
 use crate::dachshund::transitivity::Transitivity;
 use std::collections::hash_map::{Keys, Values};
 use std::collections::HashMap;
+use std::rc::Rc;
 
 pub trait UndirectedGraph
 where
@@ -80,6 +81,9 @@ impl GraphBase for SimpleUndirectedGraph {
     }
     fn count_nodes(&self) -> usize {
         self.nodes.len()
+    }
+    fn get_schema(&self) -> Rc<SimpleGraphSchema> {
+        Rc::new(SimpleGraphSchema {})
     }
 }
 impl SimpleUndirectedGraph {
