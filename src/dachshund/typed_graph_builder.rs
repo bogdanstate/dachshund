@@ -16,8 +16,8 @@ use crate::dachshund::node::{Node, NodeEdge};
 use crate::dachshund::row::EdgeRow;
 use crate::dachshund::typed_graph::TypedGraph;
 use crate::dachshund::typed_graph_schema::TypedGraphSchema;
-use rand::seq::SliceRandom;
 use rand::prelude::*;
+use rand::seq::SliceRandom;
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::hash::Hash;
 use std::rc::Rc;
@@ -421,7 +421,6 @@ impl TypedGraphBuilderWithCliques for TypedGraphBuilderWithCliquesOverRandomGrap
 }
 impl TypedGraphBuilderBase for TypedGraphBuilderWithCliquesOverRandomGraph {}
 impl TypedGraphBuilderWithCliquesOverRandomGraph {
-
     fn get_reversed_type_map(&self) -> HashMap<NodeTypeId, Vec<NodeId>> {
         let mut reversed_type_map: HashMap<NodeTypeId, Vec<NodeId>> = HashMap::new();
         for (node_id, node_type) in &self.node_type_map {
@@ -432,7 +431,6 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
         }
         reversed_type_map
     }
-    #[allow(dead_code)]
     fn generate_cliques(&mut self) -> CLQResult<()> {
         let reversed_type_map = self.get_reversed_type_map();
         for clique_gen in &self.clique_sizes {
@@ -465,7 +463,30 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
         Ok(())
     }
 
-    #[allow(dead_code)]
+    fn generate_clique_edges(&self) -> Vec<EdgeRow> {
+        let mut rows: Vec<EdgeRow> = Vec::new();
+        for row_gen in &self.cliques {
+            for ((core_type_id, non_core_type_id, edge_type_id), (core_nodes, non_core_nodes)) in
+                row_gen
+            {
+                for source_id in core_nodes {
+                    for target_id in non_core_nodes {
+                        let row = EdgeRow {
+                            graph_id: self.graph_id,
+                            source_id: *source_id,
+                            target_id: *target_id,
+                            source_type_id: *core_type_id,
+                            target_type_id: *non_core_type_id,
+                            edge_type_id: *edge_type_id,
+                        };
+                        rows.push(row);
+                    }
+                }
+            }
+        }
+        rows
+    }
+
     fn generate_er_edges(&self) -> Vec<EdgeRow> {
         let reversed_type_map = self.get_reversed_type_map();
         let mut rows: Vec<EdgeRow> = Vec::new();
@@ -476,7 +497,7 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
             for source_id in core_nodes {
                 for target_id in non_core_nodes {
                     if rng.gen::<f64>() < *p {
-                        let row = EdgeRow{
+                        let row = EdgeRow {
                             graph_id: self.graph_id,
                             source_id: *source_id,
                             target_id: *target_id,
@@ -493,17 +514,28 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
     }
     #[allow(dead_code)]
     fn generate_graph(&mut self) -> CLQResult<TypedGraph> {
-        let source_ids_vec = vec![NodeId::from(0)];
-        let target_ids_vec = vec![NodeId::from(1)];
-        let non_core_type_ids = self.get_schema().get_non_core_type_ids()?;
-        let target_type_ids: HashMap<NodeId, NodeTypeId> = target_ids_vec
+        self.generate_cliques()?;
+        let er_edges = self.generate_er_edges();
+        let clique_edges = self.generate_clique_edges();
+        let deduped = er_edges
+            .into_iter()
+            .chain(clique_edges.into_iter())
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
+
+        let source_ids_vec = deduped
             .iter()
-            .map(|x| (x.clone(), non_core_type_ids.get(0).unwrap().clone()))
-            .collect();
+            .map(|x| x.source_id.clone())
+            .collect::<Vec<_>>();
+        let target_ids_vec = deduped
+            .iter()
+            .map(|x| x.target_id.clone())
+            .collect::<Vec<_>>();
+
         let mut node_map: HashMap<NodeId, Node> =
-            Self::init_nodes(&source_ids_vec, &target_ids_vec, &target_type_ids);
-        let edges_with_cliques = self.get_clique_edges(NodeId::from(0), NodeId::from(1))?;
-        Self::populate_edges(&edges_with_cliques, &mut node_map)?;
+            Self::init_nodes(&source_ids_vec, &target_ids_vec, &self.node_type_map);
+        Self::populate_edges(&deduped, &mut node_map)?;
         let graph = self.create_graph(node_map, source_ids_vec, target_ids_vec);
         graph
     }
