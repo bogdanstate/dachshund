@@ -17,11 +17,11 @@ use lib_dachshund::dachshund::line_processor::LineProcessorBase;
 use lib_dachshund::dachshund::row::EdgeRow;
 use lib_dachshund::dachshund::search_problem::SearchProblem;
 use lib_dachshund::dachshund::typed_graph::TypedGraph;
-use lib_dachshund::dachshund::typed_graph_builder::TypedGraphBuilderWithCliquesOverExistingGraph;
+use lib_dachshund::dachshund::typed_graph_builder::{TypedGraphBuilderWithCliquesOverExistingGraph, TypedGraphBuilderWithCliquesOverRandomGraph};
 use lib_dachshund::dachshund::typed_graph_line_processor::TypedGraphLineProcessor;
 use lib_dachshund::dachshund::typed_graph_schema::TypedGraphSchema;
-
-use std::collections::BTreeSet;
+use maplit::hashmap;
+use std::collections::{BTreeSet, HashMap};
 use std::rc::Rc;
 
 fn get_builder_with_cliques(
@@ -176,5 +176,38 @@ fn test_typed_graph_seeding_two_cliques() -> CLQResult<()> {
         .into_iter()
         .map(|x| assert!(best.top_candidate.non_core_ids.contains(&NodeId::from(x))))
         .collect::<Vec<_>>();
+    Ok(())
+}
+
+#[test]
+fn test_typed_er_graph_seeding() -> CLQResult<()> {
+    let typespec = vec![
+        vec!["author".to_string(), "published".into(), "article".into()],
+        vec!["author".to_string(), "published".into(), "book".into()],
+    ];
+    let schema = Rc::new(TypedGraphSchema::new(typespec, "author".to_string())?);
+    let node_type_counts: HashMap<String, usize> = hashmap!{
+        "author".into() => 100,
+        "article".into() => 100,
+        "book".into() => 100,
+    };
+    let clique_sizes: Vec<HashMap<(String, String, String), (usize, usize)>> = vec![
+        hashmap!{
+            ("author".into(), "article".into(), "published".into()) => (10, 10),
+            ("author".into(), "book".into(), "published".into()) => (10, 10),
+        }
+    ];
+    let erdos_renyi_probabilities: HashMap<(String, String, String), f64> = hashmap!{
+        ("author".into(), "article".into(), "published".into()) => 0.01,
+        ("author".into(), "book".into(), "published".into()) => 0.01,
+    };
+
+    let _builder = TypedGraphBuilderWithCliquesOverRandomGraph::new(
+        GraphId::from(0),
+        schema,
+        node_type_counts,
+        clique_sizes,
+        erdos_renyi_probabilities,
+    );
     Ok(())
 }

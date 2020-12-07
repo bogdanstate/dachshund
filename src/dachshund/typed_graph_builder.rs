@@ -421,6 +421,59 @@ impl TypedGraphBuilderWithCliques for TypedGraphBuilderWithCliquesOverRandomGrap
 }
 impl TypedGraphBuilderBase for TypedGraphBuilderWithCliquesOverRandomGraph {}
 impl TypedGraphBuilderWithCliquesOverRandomGraph {
+    pub fn new(
+        graph_id: GraphId,
+        schema: Rc<TypedGraphSchema>,
+        node_type_counts: HashMap<String, usize>,
+        clique_sizes: Vec<HashMap<(String, String, String), (usize, usize)>>,
+        erdos_renyi_probabilities: HashMap<(String, String, String), f64>,
+    ) -> CLQResult<Self> {
+        let mut node_type_map: HashMap<NodeId, NodeTypeId> = HashMap::new();
+        for (node_type, num_nodes) in node_type_counts {
+            let node_type_id = schema.get_node_type_id(node_type)?;
+            for _ in 0..num_nodes {
+                let node_id = NodeId::from(node_type_map.len() as i64);
+                node_type_map.insert(node_id, *node_type_id);
+            }
+        }
+        Ok(Self {
+            graph_id,
+            cliques: Vec::new(),
+            node_type_map,
+            schema: schema.clone(),
+            clique_sizes: clique_sizes
+                .into_iter()
+                .map(|x| {
+                    x.into_iter()
+                        .map(|(k, v)| {
+                            (
+                                (
+                                    schema.get_node_type_id(k.0).unwrap().clone(),
+                                    schema.get_node_type_id(k.1).unwrap().clone(),
+                                    schema.get_edge_type_id(k.2).unwrap().clone(),
+                                ),
+                                v,
+                            )
+                        })
+                        .collect()
+                })
+                .collect(),
+            erdos_renyi_probabilities: erdos_renyi_probabilities
+                .into_iter()
+                .map(|(k, v)| {
+                    (
+                        (
+                            schema.get_node_type_id(k.0).unwrap().clone(),
+                            schema.get_node_type_id(k.1).unwrap().clone(),
+                            schema.get_edge_type_id(k.2).unwrap().clone(),
+                        ),
+                        v,
+                    )
+                })
+                .collect(),
+        })
+    }
+
     fn get_reversed_type_map(&self) -> HashMap<NodeTypeId, Vec<NodeId>> {
         let mut reversed_type_map: HashMap<NodeTypeId, Vec<NodeId>> = HashMap::new();
         for (node_id, node_type) in &self.node_type_map {
