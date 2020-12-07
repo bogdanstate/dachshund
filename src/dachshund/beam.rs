@@ -20,6 +20,7 @@ use crate::dachshund::row::CliqueRow;
 use crate::dachshund::scorer::Scorer;
 use crate::dachshund::search_problem::SearchProblem;
 use crate::dachshund::typed_graph::TypedGraph;
+use std::fmt;
 
 use std::rc::Rc;
 
@@ -30,18 +31,42 @@ pub struct TypedGraphCliqueSearchResult<'a> {
 }
 
 pub struct TopCandidateBeamSearchObserver {
+    run_id: usize,
     top_candidates: Vec<CandidateOutcome>,
+    search_problem: Option<Rc<SearchProblem>>,
 }
 
 impl TopCandidateBeamSearchObserver {
-    pub fn new() -> Self {
-        Self{ top_candidates: Vec::new() }
+    pub fn new(run_id: usize) -> Self {
+        Self {
+            run_id,
+            top_candidates: Vec::new(),
+            search_problem: None,
+        }
     }
     pub fn observe(&mut self, outcome: CandidateOutcome) {
         self.top_candidates.push(outcome);
     }
     pub fn get_trace(self) -> Vec<CandidateOutcome> {
         self.top_candidates
+    }
+    pub fn set_search_problem(&mut self, search_problem: Rc<SearchProblem>) {
+        self.search_problem = Some(search_problem);
+    }
+    pub fn get_header() -> String {
+        format!("run_id\tepoch\t{}\t{}", CandidateOutcome::get_header(), SearchProblem::get_header()).to_string()
+    }
+}
+impl fmt::Display for TopCandidateBeamSearchObserver {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for (epoch, outcome) in self.top_candidates.iter().enumerate() {
+            write!(f, "{}\t{}\t{}\t{}\n", self.run_id, epoch, outcome, self.search_problem.as_ref().unwrap().clone().to_string())?;
+        }
+        Ok(for epoch in self.top_candidates.len()..self.search_problem.as_ref().unwrap().num_epochs {
+            let outcome = self.top_candidates.get(self.top_candidates.len() - 1).unwrap();
+            write!(f, "{}\t{}\t{}\t{}\n", self.run_id, epoch, outcome, self.search_problem.as_ref().unwrap().clone().to_string())?;
+        })
+
     }
 }
 
@@ -155,10 +180,8 @@ impl<'a> TypedGraphCliqueSearchBeam<'a> {
         })
     }
 
-    pub fn bind_observer(
-        &mut self,
-        observer: TopCandidateBeamSearchObserver,
-    ) {
+    pub fn bind_observer(&mut self, mut observer: TopCandidateBeamSearchObserver) {
+        observer.set_search_problem(self.search_problem.clone());
         self.observer = Some(observer);
     }
     /// Try expanding each member of the beam and keep the top candidates.

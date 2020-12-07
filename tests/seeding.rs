@@ -6,7 +6,7 @@
  */
 extern crate lib_dachshund;
 
-use lib_dachshund::dachshund::beam::{TypedGraphCliqueSearchBeam, TopCandidateBeamSearchObserver};
+use lib_dachshund::dachshund::beam::{TopCandidateBeamSearchObserver, TypedGraphCliqueSearchBeam};
 use lib_dachshund::dachshund::error::{CLQError, CLQResult};
 use lib_dachshund::dachshund::graph_base::GraphBase;
 use lib_dachshund::dachshund::graph_builder_base::{
@@ -270,16 +270,8 @@ fn test_typed_er_graph_seeding() -> CLQResult<()> {
 #[test]
 fn test_typed_er_graph_seeding_complex_clique() -> CLQResult<()> {
     let typespec = vec![
-        vec![
-            "author".to_string(),
-            "published".into(),
-            "article".into(),
-        ],
-        vec![
-            "author".to_string(),
-            "published".into(),
-            "book".into(),
-        ],
+        vec!["author".to_string(), "published".into(), "article".into()],
+        vec!["author".to_string(), "published".into(), "book".into()],
     ];
     let schema = Rc::new(TypedGraphSchema::new(typespec, "author".to_string())?);
     let node_type_counts: HashMap<String, usize> = hashmap! {

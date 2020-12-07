@@ -55,6 +55,27 @@ pub struct CandidateOutcome {
     max_core_node_edges: usize,
     ties_between_nodes: usize,
 }
+impl CandidateOutcome {
+    pub fn get_header() -> String {
+        "num_core_ids\tnum_non_core_ids\tscore\tmax_core_node_edges\tties_between_nodes".to_string()
+    }
+}
+impl fmt::Display for CandidateOutcome {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}\t{}\t{}\t{}\t{}",
+            self.core_ids.len(),
+            self.non_core_ids.len(),
+            match self.score {
+                Some(score) => format!("{}", score),
+                None => "NA".to_string(),
+            },
+            self.max_core_node_edges,
+            self.ties_between_nodes
+        )
+    }
+}
 
 /// This data structure contains everything that identifies a candidate (fuzzy) clique. To
 /// reiterate, a (fuzzy) clique is a subgraph of edges going from some set of "core" nodes
