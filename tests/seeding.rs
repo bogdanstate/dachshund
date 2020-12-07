@@ -266,3 +266,71 @@ fn test_typed_er_graph_seeding() -> CLQResult<()> {
     );
     Ok(())
 }
+
+#[test]
+fn test_typed_er_graph_seeding_complex_clique() -> CLQResult<()> {
+    let typespec = vec![
+        vec![
+            "author".to_string(),
+            "published".into(),
+            "article".into(),
+        ],
+        vec![
+            "author".to_string(),
+            "published".into(),
+            "book".into(),
+        ],
+    ];
+    let schema = Rc::new(TypedGraphSchema::new(typespec, "author".to_string())?);
+    let node_type_counts: HashMap<String, usize> = hashmap! {
+        "author".into() => 100,
+        "article".into() => 100,
+        "book".into() => 100,
+    };
+    let clique_sizes: Vec<(usize, HashMap<(String, String), usize>)> = vec![(
+        10,
+        hashmap! {
+            ("article".into(), "published".into()) => 10,
+            ("book".into(), "published".into()) => 20,
+        },
+    )];
+    let erdos_renyi_probabilities: HashMap<(String, String, String), f64> = hashmap! {
+        ("author".into(), "article".into(), "published".into()) => 0.01,
+        ("author".into(), "book".into(), "published".into()) => 0.01,
+    };
+
+    let mut builder = TypedGraphBuilderWithCliquesOverRandomGraph::new(
+        GraphId::from(0),
+        schema,
+        node_type_counts,
+        clique_sizes,
+        erdos_renyi_probabilities,
+    )?;
+    builder.generate_cliques()?;
+    let graph = builder.generate_graph()?;
+    assert!(graph.count_edges() / 2 >= 200);
+    let search_problem = Rc::new(SearchProblem::new(
+        20,
+        10.0,
+        Some(1.0),
+        Some(1.0),
+        10,
+        10000,
+        3,
+        0,
+    ));
+    let clique_rows = Vec::new();
+    let mut beam = TypedGraphCliqueSearchBeam::new(
+        search_problem,
+        GraphId::from(0),
+        &graph,
+        &clique_rows,
+        false,
+    )?;
+    let best = beam.run_search()?;
+    assert_eq!(
+        best.top_candidate.core_ids.len() * best.top_candidate.non_core_ids.len(),
+        300
+    );
+    Ok(())
+}
