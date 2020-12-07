@@ -484,7 +484,7 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
         }
         reversed_type_map
     }
-    fn generate_cliques(&mut self) -> CLQResult<()> {
+    pub fn generate_cliques(&mut self) -> CLQResult<()> {
         let reversed_type_map = self.get_reversed_type_map();
         for clique_gen in &self.clique_sizes {
             let mut clique: HashMap<
@@ -575,9 +575,7 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
         }
         rows
     }
-    #[allow(dead_code)]
-    fn generate_graph(&mut self) -> CLQResult<TypedGraph> {
-        self.generate_cliques()?;
+    pub fn generate_graph(&mut self) -> CLQResult<TypedGraph> {
         let er_edges = self.generate_er_edges();
         let clique_edges = self.generate_clique_edges();
         let deduped = er_edges

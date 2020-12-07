@@ -10,14 +10,16 @@ use lib_dachshund::dachshund::beam::TypedGraphCliqueSearchBeam;
 use lib_dachshund::dachshund::error::{CLQError, CLQResult};
 use lib_dachshund::dachshund::graph_base::GraphBase;
 use lib_dachshund::dachshund::graph_builder_base::{
-    GraphBuilderBaseWithPreProcessing, GraphBuilderFromVector,
+    GraphBuilderBaseWithKnownCliques, GraphBuilderBaseWithPreProcessing, GraphBuilderFromVector,
 };
 use lib_dachshund::dachshund::id_types::{GraphId, NodeId};
 use lib_dachshund::dachshund::line_processor::LineProcessorBase;
 use lib_dachshund::dachshund::row::EdgeRow;
 use lib_dachshund::dachshund::search_problem::SearchProblem;
 use lib_dachshund::dachshund::typed_graph::TypedGraph;
-use lib_dachshund::dachshund::typed_graph_builder::{TypedGraphBuilderWithCliquesOverExistingGraph, TypedGraphBuilderWithCliquesOverRandomGraph};
+use lib_dachshund::dachshund::typed_graph_builder::{
+    TypedGraphBuilderWithCliquesOverExistingGraph, TypedGraphBuilderWithCliquesOverRandomGraph,
+};
 use lib_dachshund::dachshund::typed_graph_line_processor::TypedGraphLineProcessor;
 use lib_dachshund::dachshund::typed_graph_schema::TypedGraphSchema;
 use maplit::hashmap;
@@ -181,33 +183,83 @@ fn test_typed_graph_seeding_two_cliques() -> CLQResult<()> {
 
 #[test]
 fn test_typed_er_graph_seeding() -> CLQResult<()> {
-    let typespec = vec![
-        vec!["author".to_string(), "published".into(), "article".into()],
-        vec!["author".to_string(), "published".into(), "book".into()],
-    ];
+    let typespec = vec![vec![
+        "author".to_string(),
+        "published".into(),
+        "article".into(),
+    ]];
     let schema = Rc::new(TypedGraphSchema::new(typespec, "author".to_string())?);
-    let node_type_counts: HashMap<String, usize> = hashmap!{
+    let node_type_counts: HashMap<String, usize> = hashmap! {
         "author".into() => 100,
         "article".into() => 100,
-        "book".into() => 100,
     };
-    let clique_sizes: Vec<HashMap<(String, String, String), (usize, usize)>> = vec![
-        hashmap!{
-            ("author".into(), "article".into(), "published".into()) => (10, 10),
-            ("author".into(), "book".into(), "published".into()) => (10, 10),
-        }
-    ];
-    let erdos_renyi_probabilities: HashMap<(String, String, String), f64> = hashmap!{
+    let clique_sizes: Vec<HashMap<(String, String, String), (usize, usize)>> = vec![hashmap! {
+        ("author".into(), "article".into(), "published".into()) => (10, 10),
+    }];
+    let erdos_renyi_probabilities: HashMap<(String, String, String), f64> = hashmap! {
         ("author".into(), "article".into(), "published".into()) => 0.01,
-        ("author".into(), "book".into(), "published".into()) => 0.01,
     };
 
-    let _builder = TypedGraphBuilderWithCliquesOverRandomGraph::new(
+    let mut builder = TypedGraphBuilderWithCliquesOverRandomGraph::new(
         GraphId::from(0),
         schema,
         node_type_counts,
         clique_sizes,
         erdos_renyi_probabilities,
+    )?;
+    builder.generate_cliques()?;
+    assert_eq!(builder.get_cliques().len(), 1);
+    assert_eq!(builder.get_cliques().get(0).unwrap().len(), 1);
+    assert_eq!(
+        builder
+            .get_cliques()
+            .get(0)
+            .unwrap()
+            .values()
+            .collect::<Vec<_>>()
+            .get(0)
+            .unwrap()
+            .0
+            .len(),
+        10
+    );
+    assert_eq!(
+        builder
+            .get_cliques()
+            .get(0)
+            .unwrap()
+            .values()
+            .collect::<Vec<_>>()
+            .get(0)
+            .unwrap()
+            .1
+            .len(),
+        10
+    );
+    let graph = builder.generate_graph()?;
+    assert!(graph.count_edges() / 2 >= 100);
+    let search_problem = Rc::new(SearchProblem::new(
+        100,
+        10.0,
+        Some(1.0),
+        Some(1.0),
+        100,
+        100000,
+        100,
+        0,
+    ));
+    let clique_rows = Vec::new();
+    let mut beam = TypedGraphCliqueSearchBeam::new(
+        search_problem,
+        GraphId::from(0),
+        &graph,
+        &clique_rows,
+        false,
+    )?;
+    let best = beam.run_search()?;
+    assert_eq!(
+        best.top_candidate.core_ids.len() * best.top_candidate.non_core_ids.len(),
+        100
     );
     Ok(())
 }
