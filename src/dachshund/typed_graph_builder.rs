@@ -463,28 +463,38 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
         Ok(())
     }
 
-    fn generate_clique_edges(&self) -> Vec<EdgeRow> {
+    fn create_clique_rows(
+        &self,
+        generator: Vec<(
+            (NodeTypeId, NodeTypeId, EdgeTypeId),
+            (BTreeSet<NodeId>, BTreeSet<NodeId>),
+        )>,
+    ) -> Vec<EdgeRow> {
         let mut rows: Vec<EdgeRow> = Vec::new();
-        for row_gen in &self.cliques {
-            for ((core_type_id, non_core_type_id, edge_type_id), (core_nodes, non_core_nodes)) in
-                row_gen
-            {
-                for source_id in core_nodes {
-                    for target_id in non_core_nodes {
-                        let row = EdgeRow {
-                            graph_id: self.graph_id,
-                            source_id: *source_id,
-                            target_id: *target_id,
-                            source_type_id: *core_type_id,
-                            target_type_id: *non_core_type_id,
-                            edge_type_id: *edge_type_id,
-                        };
-                        rows.push(row);
-                    }
+        for ((core_type_id, non_core_type_id, edge_type_id), (core_nodes, non_core_nodes)) in
+            generator
+        {
+            for source_id in core_nodes {
+                for target_id in &non_core_nodes {
+                    let row = EdgeRow {
+                        graph_id: self.graph_id,
+                        source_id: source_id,
+                        target_id: *target_id,
+                        source_type_id: core_type_id,
+                        target_type_id: non_core_type_id,
+                        edge_type_id: edge_type_id,
+                    };
+                    rows.push(row);
                 }
             }
         }
         rows
+    }
+    fn generate_clique_edges(&self) -> Vec<EdgeRow> {
+        self.cliques
+            .iter()
+            .flat_map(|x| self.create_clique_rows(x.clone().into_iter().collect()))
+            .collect()
     }
 
     fn generate_er_edges(&self) -> Vec<EdgeRow> {
@@ -538,6 +548,43 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
         Self::populate_edges(&deduped, &mut node_map)?;
         let graph = self.create_graph(node_map, source_ids_vec, target_ids_vec);
         graph
+    }
+
+    #[allow(dead_code)]
+    fn compute_detected_cliques_overlap(
+        self,
+        detected_cliques: Vec<(
+            (NodeTypeId, NodeTypeId, EdgeTypeId),
+            (BTreeSet<NodeId>, BTreeSet<NodeId>),
+        )>,
+    ) -> (usize, usize) {
+        let existing_cliques: Vec<(
+            (NodeTypeId, NodeTypeId, EdgeTypeId),
+            (BTreeSet<NodeId>, BTreeSet<NodeId>),
+        )> = self
+            .cliques
+            .iter()
+            .cloned()
+            .flat_map(|x| x.into_iter().collect::<Vec<_>>())
+            .collect::<Vec<_>>();
+        let existing_rows = self
+            .create_clique_rows(existing_cliques)
+            .into_iter()
+            .collect::<HashSet<_>>();
+        let detected_rows = self
+            .create_clique_rows(detected_cliques)
+            .into_iter()
+            .collect::<HashSet<_>>();
+        (
+            detected_rows
+                .iter()
+                .filter(|x| existing_rows.contains(x))
+                .count(),
+            existing_rows
+                .iter()
+                .filter(|x| detected_rows.contains(x))
+                .count(),
+        )
     }
 }
 impl GraphBuilderBaseWithKnownCliques for TypedGraphBuilderWithCliquesOverRandomGraph {
