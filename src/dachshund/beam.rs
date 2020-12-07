@@ -12,7 +12,7 @@ use std::hash::{Hash, Hasher};
 
 use rand::prelude::*;
 
-use crate::dachshund::candidate::Candidate;
+use crate::dachshund::candidate::{Candidate, CandidateOutcome};
 use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::id_types::{GraphId, NodeId};
@@ -29,6 +29,22 @@ pub struct TypedGraphCliqueSearchResult<'a> {
     pub num_steps: usize,
 }
 
+pub struct TopCandidateBeamSearchObserver {
+    top_candidates: Vec<CandidateOutcome>,
+}
+
+impl TopCandidateBeamSearchObserver {
+    pub fn new() -> Self {
+        Self{ top_candidates: Vec::new() }
+    }
+    pub fn observe(&mut self, outcome: CandidateOutcome) {
+        self.top_candidates.push(outcome);
+    }
+    pub fn get_trace(self) -> Vec<CandidateOutcome> {
+        self.top_candidates
+    }
+}
+
 /// Used for (quasi-clique) detection. A singleton object that keeps state across the beam search.
 /// At any point this object considers a "beam" of candidates that is always kept under beam_size,
 /// to avoid exponential blowup of the search space.
@@ -40,6 +56,7 @@ pub struct TypedGraphCliqueSearchBeam<'a> {
     non_core_types: Vec<String>,
     visited_candidates: HashSet<u64>,
     scorer: Scorer,
+    observer: Option<TopCandidateBeamSearchObserver>,
 }
 
 impl<'a> TypedGraphCliqueSearchBeam<'a> {
@@ -134,9 +151,16 @@ impl<'a> TypedGraphCliqueSearchBeam<'a> {
             non_core_types,
             visited_candidates,
             scorer,
+            observer: None,
         })
     }
 
+    pub fn bind_observer(
+        &mut self,
+        observer: TopCandidateBeamSearchObserver,
+    ) {
+        self.observer = Some(observer);
+    }
     /// Try expanding each member of the beam and keep the top candidates.
     fn one_step_search(
         &mut self,
@@ -246,6 +270,9 @@ impl<'a> TypedGraphCliqueSearchBeam<'a> {
                 if !can_continue {
                     break;
                 }
+                if let Some(ref mut observer) = &mut self.observer {
+                    observer.observe(top.as_outcome());
+                }
                 let score: f32 = top.get_score()?;
                 if self.verbose {
                     eprintln!(
@@ -291,5 +318,9 @@ impl<'a> TypedGraphCliqueSearchBeam<'a> {
             top_candidate: best_candidate,
             num_steps: 0,
         })
+    }
+
+    pub fn get_observer(self) -> TopCandidateBeamSearchObserver {
+        self.observer.unwrap()
     }
 }

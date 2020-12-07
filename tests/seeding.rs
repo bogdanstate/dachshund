@@ -6,7 +6,7 @@
  */
 extern crate lib_dachshund;
 
-use lib_dachshund::dachshund::beam::TypedGraphCliqueSearchBeam;
+use lib_dachshund::dachshund::beam::{TypedGraphCliqueSearchBeam, TopCandidateBeamSearchObserver};
 use lib_dachshund::dachshund::error::{CLQError, CLQResult};
 use lib_dachshund::dachshund::graph_base::GraphBase;
 use lib_dachshund::dachshund::graph_builder_base::{
@@ -314,7 +314,7 @@ fn test_typed_er_graph_seeding_complex_clique() -> CLQResult<()> {
         10.0,
         Some(1.0),
         Some(1.0),
-        10,
+        100,
         10000,
         3,
         0,
@@ -327,10 +327,14 @@ fn test_typed_er_graph_seeding_complex_clique() -> CLQResult<()> {
         &clique_rows,
         false,
     )?;
+    let observer = TopCandidateBeamSearchObserver::new();
+    beam.bind_observer(observer);
     let best = beam.run_search()?;
     assert_eq!(
         best.top_candidate.core_ids.len() * best.top_candidate.non_core_ids.len(),
         300
     );
+    let trace = beam.get_observer().get_trace();
+    assert_eq!(trace.len(), 40);
     Ok(())
 }
