@@ -17,6 +17,7 @@ use crate::dachshund::row::EdgeRow;
 use crate::dachshund::typed_graph::TypedGraph;
 use crate::dachshund::typed_graph_schema::TypedGraphSchema;
 use rand::seq::SliceRandom;
+use rand::prelude::*;
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::hash::Hash;
 use std::rc::Rc;
@@ -399,6 +400,7 @@ pub struct TypedGraphBuilderWithCliquesOverRandomGraph {
     pub node_type_map: HashMap<NodeId, NodeTypeId>,
     pub schema: Rc<TypedGraphSchema>,
     clique_sizes: Vec<HashMap<(NodeTypeId, NodeTypeId, EdgeTypeId), (usize, usize)>>,
+    erdos_renyi_probabilities: HashMap<(NodeTypeId, NodeTypeId, EdgeTypeId), f64>,
 }
 impl GraphBuilderBase for TypedGraphBuilderWithCliquesOverRandomGraph {
     type GraphType = TypedGraph;
@@ -420,8 +422,7 @@ impl TypedGraphBuilderWithCliques for TypedGraphBuilderWithCliquesOverRandomGrap
 impl TypedGraphBuilderBase for TypedGraphBuilderWithCliquesOverRandomGraph {}
 impl TypedGraphBuilderWithCliquesOverRandomGraph {
 
-    #[allow(dead_code)]
-    fn generate_cliques(&mut self) -> CLQResult<()> {
+    fn get_reversed_type_map(&self) -> HashMap<NodeTypeId, Vec<NodeId>> {
         let mut reversed_type_map: HashMap<NodeTypeId, Vec<NodeId>> = HashMap::new();
         for (node_id, node_type) in &self.node_type_map {
             reversed_type_map
@@ -429,6 +430,11 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
                 .or_insert(Vec::new())
                 .push(*node_id);
         }
+        reversed_type_map
+    }
+    #[allow(dead_code)]
+    fn generate_cliques(&mut self) -> CLQResult<()> {
+        let reversed_type_map = self.get_reversed_type_map();
         for clique_gen in &self.clique_sizes {
             let mut clique: HashMap<
                 (NodeTypeId, NodeTypeId, EdgeTypeId),
@@ -459,6 +465,32 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
         Ok(())
     }
 
+    #[allow(dead_code)]
+    fn generate_er_edges(&self) -> Vec<EdgeRow> {
+        let reversed_type_map = self.get_reversed_type_map();
+        let mut rows: Vec<EdgeRow> = Vec::new();
+        for ((core_type_id, non_core_type_id, edge_type_id), p) in &self.erdos_renyi_probabilities {
+            let mut rng = rand::thread_rng();
+            let core_nodes = reversed_type_map.get(core_type_id).unwrap();
+            let non_core_nodes = reversed_type_map.get(non_core_type_id).unwrap();
+            for source_id in core_nodes {
+                for target_id in non_core_nodes {
+                    if rng.gen::<f64>() < *p {
+                        let row = EdgeRow{
+                            graph_id: self.graph_id,
+                            source_id: *source_id,
+                            target_id: *target_id,
+                            source_type_id: *core_type_id,
+                            target_type_id: *non_core_type_id,
+                            edge_type_id: *edge_type_id,
+                        };
+                        rows.push(row);
+                    }
+                }
+            }
+        }
+        rows
+    }
     #[allow(dead_code)]
     fn generate_graph(&mut self) -> CLQResult<TypedGraph> {
         let source_ids_vec = vec![NodeId::from(0)];
