@@ -193,9 +193,12 @@ fn test_typed_er_graph_seeding() -> CLQResult<()> {
         "author".into() => 100,
         "article".into() => 100,
     };
-    let clique_sizes: Vec<(usize, HashMap<(String, String), usize>)> = vec![(10, hashmap! {
-        ("article".into(), "published".into()) => 10,
-    })];
+    let clique_sizes: Vec<(usize, HashMap<(String, String), usize>)> = vec![(
+        10,
+        hashmap! {
+            ("article".into(), "published".into()) => 10,
+        },
+    )];
     let erdos_renyi_probabilities: HashMap<(String, String, String), f64> = hashmap! {
         ("author".into(), "article".into(), "published".into()) => 0.01,
     };

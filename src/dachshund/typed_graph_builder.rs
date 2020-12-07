@@ -443,20 +443,23 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
             schema: schema.clone(),
             clique_sizes: clique_sizes
                 .into_iter()
-                .map(|(num_cores, non_core_recipe)| {(
-                    num_cores,
-                    non_core_recipe.into_iter()
-                        .map(|(k, v)| {
-                            (
+                .map(|(num_cores, non_core_recipe)| {
+                    (
+                        num_cores,
+                        non_core_recipe
+                            .into_iter()
+                            .map(|(k, v)| {
                                 (
-                                    schema.get_node_type_id(k.0).unwrap().clone(),
-                                    schema.get_edge_type_id(k.1).unwrap().clone(),
-                                ),
-                                v,
-                            )
-                        })
-                        .collect()
-                )})
+                                    (
+                                        schema.get_node_type_id(k.0).unwrap().clone(),
+                                        schema.get_edge_type_id(k.1).unwrap().clone(),
+                                    ),
+                                    v,
+                                )
+                            })
+                            .collect(),
+                    )
+                })
                 .collect(),
             erdos_renyi_probabilities: erdos_renyi_probabilities
                 .into_iter()
@@ -492,14 +495,13 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
                 (NodeTypeId, NodeTypeId, EdgeTypeId),
                 (BTreeSet<NodeId>, BTreeSet<NodeId>),
             > = HashMap::new();
-            for ((non_core_type_id, edge_type_id), num_non_cores) in clique_gen
-            {
-                let core_node_ids: BTreeSet<NodeId> = reversed_type_map
-                    .get(core_type_id)
-                    .unwrap()
-                    .choose_multiple(&mut rand::thread_rng(), *num_cores)
-                    .cloned()
-                    .collect();
+            let core_node_ids: BTreeSet<NodeId> = reversed_type_map
+                .get(core_type_id)
+                .unwrap()
+                .choose_multiple(&mut rand::thread_rng(), *num_cores)
+                .cloned()
+                .collect();
+            for ((non_core_type_id, edge_type_id), num_non_cores) in clique_gen {
                 let non_core_node_ids: BTreeSet<NodeId> = reversed_type_map
                     .get(non_core_type_id)
                     .unwrap()
@@ -508,7 +510,7 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
                     .collect();
                 clique.insert(
                     (*core_type_id, *non_core_type_id, *edge_type_id),
-                    (core_node_ids, non_core_node_ids),
+                    (core_node_ids.clone(), non_core_node_ids),
                 );
             }
             self.cliques.push(clique);
