@@ -399,7 +399,7 @@ pub struct TypedGraphBuilderWithCliquesOverRandomGraph {
         Vec<HashMap<(NodeTypeId, NodeTypeId, EdgeTypeId), (BTreeSet<NodeId>, BTreeSet<NodeId>)>>,
     pub node_type_map: HashMap<NodeId, NodeTypeId>,
     pub schema: Rc<TypedGraphSchema>,
-    clique_sizes: Vec<HashMap<(NodeTypeId, NodeTypeId, EdgeTypeId), (usize, usize)>>,
+    clique_sizes: Vec<(usize, HashMap<(NodeTypeId, EdgeTypeId), usize>)>,
     erdos_renyi_probabilities: HashMap<(NodeTypeId, NodeTypeId, EdgeTypeId), f64>,
 }
 impl GraphBuilderBase for TypedGraphBuilderWithCliquesOverRandomGraph {
@@ -425,7 +425,7 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
         graph_id: GraphId,
         schema: Rc<TypedGraphSchema>,
         node_type_counts: HashMap<String, usize>,
-        clique_sizes: Vec<HashMap<(String, String, String), (usize, usize)>>,
+        clique_sizes: Vec<(usize, HashMap<(String, String), usize>)>,
         erdos_renyi_probabilities: HashMap<(String, String, String), f64>,
     ) -> CLQResult<Self> {
         let mut node_type_map: HashMap<NodeId, NodeTypeId> = HashMap::new();
@@ -443,20 +443,20 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
             schema: schema.clone(),
             clique_sizes: clique_sizes
                 .into_iter()
-                .map(|x| {
-                    x.into_iter()
+                .map(|(num_cores, non_core_recipe)| {(
+                    num_cores,
+                    non_core_recipe.into_iter()
                         .map(|(k, v)| {
                             (
                                 (
                                     schema.get_node_type_id(k.0).unwrap().clone(),
-                                    schema.get_node_type_id(k.1).unwrap().clone(),
-                                    schema.get_edge_type_id(k.2).unwrap().clone(),
+                                    schema.get_edge_type_id(k.1).unwrap().clone(),
                                 ),
                                 v,
                             )
                         })
                         .collect()
-                })
+                )})
                 .collect(),
             erdos_renyi_probabilities: erdos_renyi_probabilities
                 .into_iter()
@@ -486,13 +486,13 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
     }
     pub fn generate_cliques(&mut self) -> CLQResult<()> {
         let reversed_type_map = self.get_reversed_type_map();
-        for clique_gen in &self.clique_sizes {
+        let core_type_id = self.schema.get_core_type_id()?;
+        for (num_cores, clique_gen) in &self.clique_sizes {
             let mut clique: HashMap<
                 (NodeTypeId, NodeTypeId, EdgeTypeId),
                 (BTreeSet<NodeId>, BTreeSet<NodeId>),
             > = HashMap::new();
-            for ((core_type_id, non_core_type_id, edge_type_id), (num_cores, num_non_cores)) in
-                clique_gen
+            for ((non_core_type_id, edge_type_id), num_non_cores) in clique_gen
             {
                 let core_node_ids: BTreeSet<NodeId> = reversed_type_map
                     .get(core_type_id)
