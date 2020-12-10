@@ -22,7 +22,7 @@ use lib_dachshund::dachshund::coreness::Coreness;
 use lib_dachshund::dachshund::eigenvector_centrality::EigenvectorCentrality;
 use lib_dachshund::dachshund::error::CLQResult;
 use lib_dachshund::dachshund::graph_base::GraphBase;
-use lib_dachshund::dachshund::graph_builder_base::GraphBuilderBase;
+use lib_dachshund::dachshund::graph_builder_base::{GraphBuilderBase, GraphBuilderFromVector};
 use lib_dachshund::dachshund::id_types::NodeId;
 use lib_dachshund::dachshund::laplacian::Laplacian;
 use lib_dachshund::dachshund::node::DirectedNodeBase;
@@ -123,7 +123,7 @@ fn get_karate_club_edges() -> Vec<(usize, usize)> {
 fn _get_karate_club_graph_with_one_extra_edge<T, R>(mut builder: T) -> CLQResult<R>
 where
     R: GraphBase,
-    T: GraphBuilderBase<GraphType = R, RowType = (i64, i64)>,
+    T: GraphBuilderFromVector + GraphBuilderBase<GraphType = R, RowType = (i64, i64)>,
 {
     let mut rows = get_karate_club_edges();
     rows.push((35, 36));
@@ -153,7 +153,7 @@ fn get_two_karate_clubs_edges() -> Vec<(usize, usize)> {
 fn _get_two_karate_clubs<T, R>(mut builder: T) -> CLQResult<R>
 where
     R: GraphBase,
-    T: GraphBuilderBase<GraphType = R, RowType = (i64, i64)>,
+    T: GraphBuilderFromVector + GraphBuilderBase<GraphType = R, RowType = (i64, i64)>,
 {
     let rows = get_two_karate_clubs_edges();
     builder.from_vector(
@@ -204,7 +204,7 @@ fn get_directed_karate_club_graph_with_core(
 fn _get_two_karate_clubs_with_bridge<T, R>(mut builder: T) -> CLQResult<R>
 where
     R: GraphBase,
-    T: GraphBuilderBase<GraphType = R, RowType = (i64, i64)>,
+    T: GraphBuilderFromVector + GraphBuilderBase<GraphType = R, RowType = (i64, i64)>,
 {
     let mut rows = get_two_karate_clubs_edges();
     rows.push((34, 35));
@@ -222,7 +222,7 @@ fn get_two_karate_clubs_with_bridge() -> CLQResult<SimpleUndirectedGraph> {
 fn _get_karate_club_graph<T, R>(mut builder: T) -> CLQResult<R>
 where
     R: GraphBase,
-    T: GraphBuilderBase<GraphType = R, RowType = (i64, i64)>,
+    T: GraphBuilderFromVector + GraphBuilderBase<GraphType = R, RowType = (i64, i64)>,
 {
     let rows = get_karate_club_edges();
     builder.from_vector(

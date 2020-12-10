@@ -60,6 +60,19 @@ version = "2.0.0"
 [dependencies.itertools]
 version = "0.9.0"
 
+[dependencies.maplit]
+version = "1.0.2"
+
+[dependencies.indoc]
+version = "1.0.3"
+
+[dependencies.serde]
+version = "1.0"
+features = ["derive"]
+
+[dependencies.serde_yaml]
+version = "0.8"
+
 [[bin]]
 name = "clique_miner"
 path = "src/clique_miner.rs"
@@ -67,3 +80,9 @@ path = "src/clique_miner.rs"
 [[bin]]
 name = "simple_graph_featurizer"
 path = "src/simple_graph_featurizer.rs"
+
+[[bin]]
+name = "clique_miner_experiment"
+path = "src/clique_miner_experiment.rs"
+
+

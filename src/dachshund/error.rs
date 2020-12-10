@@ -35,6 +35,9 @@ pub enum CLQError {
 
     #[error("Impossible error: {0}")]
     Infallible(#[from] std::convert::Infallible),
+
+    #[error("YAML error: {0}")]
+    YAML(#[from] serde_yaml::Error),
 }
 
 impl CLQError {

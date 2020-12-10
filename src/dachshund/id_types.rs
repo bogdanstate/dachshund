@@ -4,6 +4,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+use core::cmp::Ordering;
 use std::fmt;
 
 /// An opaque identifier for node types, with a little convenience metadata.
@@ -53,9 +54,26 @@ where
         }
     }
 }
+impl Ord for NodeTypeId {
+    fn cmp(&self, other: &Self) -> Ordering {
+        let self_tuple = (self.id, self.core, self.max_edge_count_with_core_node);
+        let other_tuple = (other.id, other.core, other.max_edge_count_with_core_node);
+        self_tuple.cmp(&other_tuple)
+    }
+}
+impl PartialOrd for NodeTypeId {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl fmt::Display for NodeTypeId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "EdgeType:{}", self.id)
+    }
+}
 
 /// An opaque identifier for edge types. Not interpreted by dachshund logic in any way.
-#[derive(Hash, Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Hash, Copy, Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub struct EdgeTypeId {
     id: usize,
 }
@@ -70,6 +88,11 @@ where
 {
     fn from(n: T) -> Self {
         Self { id: n.into() }
+    }
+}
+impl fmt::Display for EdgeTypeId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "EdgeType:{}", self.id)
     }
 }
 
@@ -100,7 +123,7 @@ impl fmt::Display for NodeId {
 /// Used to refer to distinct graphs. Current use cases:
 /// - as a key for input to a transformer (multiple graphs may be processed, in order).
 /// - as an identifier for a (quasi-)clique, after it is output.
-#[derive(Hash, Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Hash, Copy, Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub struct GraphId {
     id: i64,
 }

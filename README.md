@@ -72,5 +72,16 @@ See `./target/debug/clique_miner --help` for meaning of each option.
 
 See the [CONTRIBUTING](CONTRIBUTING.md) file for how to help out.
 
+## Running clique generator
+
+```
+cargo +nightly build --release
+./target/release/clique_miner_experiment -c=experiment.yaml -e=edges.txt
+-q=cliques.yaml
+```
+
+Edges to feed into `clique_miner` can be found in `edges.txt`, ground-truth
+cliques (serialized as YAML) can be found in `cliques.yaml`.
+
 ## License
 Dachshund is MIT licensed, as found in the LICENSE file.

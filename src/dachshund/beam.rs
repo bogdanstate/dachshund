@@ -12,7 +12,7 @@ use std::hash::{Hash, Hasher};
 
 use rand::prelude::*;
 
-use crate::dachshund::candidate::Candidate;
+use crate::dachshund::candidate::{Candidate, CandidateOutcome};
 use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::graph_base::GraphBase;
 use crate::dachshund::id_types::{GraphId, NodeId};
@@ -20,6 +20,7 @@ use crate::dachshund::row::CliqueRow;
 use crate::dachshund::scorer::Scorer;
 use crate::dachshund::search_problem::SearchProblem;
 use crate::dachshund::typed_graph::TypedGraph;
+use std::fmt;
 
 use std::rc::Rc;
 
@@ -27,6 +28,70 @@ use std::rc::Rc;
 pub struct TypedGraphCliqueSearchResult<'a> {
     pub top_candidate: Candidate<'a, TypedGraph>,
     pub num_steps: usize,
+}
+
+pub struct TopCandidateBeamSearchObserver {
+    run_id: usize,
+    top_candidates: Vec<CandidateOutcome>,
+    search_problem: Option<Rc<SearchProblem>>,
+}
+
+impl TopCandidateBeamSearchObserver {
+    pub fn new(run_id: usize) -> Self {
+        Self {
+            run_id,
+            top_candidates: Vec::new(),
+            search_problem: None,
+        }
+    }
+    pub fn observe(&mut self, outcome: CandidateOutcome) {
+        self.top_candidates.push(outcome);
+    }
+    pub fn get_trace(self) -> Vec<CandidateOutcome> {
+        self.top_candidates
+    }
+    pub fn set_search_problem(&mut self, search_problem: Rc<SearchProblem>) {
+        self.search_problem = Some(search_problem);
+    }
+    pub fn get_header() -> String {
+        format!(
+            "run_id\tepoch\t{}\t{}",
+            CandidateOutcome::get_header(),
+            SearchProblem::get_header()
+        )
+        .to_string()
+    }
+}
+impl fmt::Display for TopCandidateBeamSearchObserver {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for (epoch, outcome) in self.top_candidates.iter().enumerate() {
+            write!(
+                f,
+                "{}\t{}\t{}\t{}\n",
+                self.run_id,
+                epoch,
+                outcome,
+                self.search_problem.as_ref().unwrap().clone().to_string()
+            )?;
+        }
+        Ok(
+            for epoch in self.top_candidates.len()..self.search_problem.as_ref().unwrap().num_epochs
+            {
+                let outcome = self
+                    .top_candidates
+                    .get(self.top_candidates.len() - 1)
+                    .unwrap();
+                write!(
+                    f,
+                    "{}\t{}\t{}\t{}\n",
+                    self.run_id,
+                    epoch,
+                    outcome,
+                    self.search_problem.as_ref().unwrap().clone().to_string()
+                )?;
+            },
+        )
+    }
 }
 
 /// Used for (quasi-clique) detection. A singleton object that keeps state across the beam search.
@@ -40,6 +105,7 @@ pub struct TypedGraphCliqueSearchBeam<'a> {
     non_core_types: Vec<String>,
     visited_candidates: HashSet<u64>,
     scorer: Scorer,
+    observer: Option<TopCandidateBeamSearchObserver>,
 }
 
 impl<'a> TypedGraphCliqueSearchBeam<'a> {
@@ -71,7 +137,6 @@ impl<'a> TypedGraphCliqueSearchBeam<'a> {
     ///     - `beam_size`: the number of top candidates to maintain as potential future sources
     ///     for expansion in the "beam" (i.e., the list of top candidates).
     ///     - `verbose`: used for debugging.
-    ///     - `non_core_types`: list of string identifiers for non-core types.
     ///     - `alpha`: `Scorer` constructor parameter. Controls the contribution of density
     ///     to the ``cliqueness'' score. Higher values means denser cliques are prefered, all else
     ///     being equal.
@@ -81,19 +146,18 @@ impl<'a> TypedGraphCliqueSearchBeam<'a> {
     ///     must have at least `local_thresh` proportion of ties to other nodes in the candidate,
     ///     for the candidate to be considered valid.
     ///     - `graph_id`: uniquely identifies the graph currently being processed.
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
+        search_problem: Rc<SearchProblem>,
+        graph_id: GraphId,
         graph: &'a TypedGraph,
         clique_rows: &'a Vec<CliqueRow>,
         verbose: bool,
-        non_core_types: Vec<String>,
-        num_non_core_types: usize,
-        search_problem: Rc<SearchProblem>,
-        graph_id: GraphId,
     ) -> CLQResult<TypedGraphCliqueSearchBeam<'a>> {
         let core_ids: &Vec<NodeId> = &graph.get_core_ids();
         let non_core_ids: &Vec<NodeId> = &graph.get_non_core_ids().unwrap();
-
+        let schema = graph.get_schema();
+        let non_core_types = schema.get_non_core_types();
+        let num_non_core_types = schema.get_num_non_core_types();
         let mut candidates: Vec<Candidate<TypedGraph>> = Vec::new();
         let scorer: Scorer = Scorer::new(num_non_core_types, &search_problem);
 
@@ -136,9 +200,14 @@ impl<'a> TypedGraphCliqueSearchBeam<'a> {
             non_core_types,
             visited_candidates,
             scorer,
+            observer: None,
         })
     }
 
+    pub fn bind_observer(&mut self, mut observer: TopCandidateBeamSearchObserver) {
+        observer.set_search_problem(self.search_problem.clone());
+        self.observer = Some(observer);
+    }
     /// Try expanding each member of the beam and keep the top candidates.
     fn one_step_search(
         &mut self,
@@ -248,6 +317,9 @@ impl<'a> TypedGraphCliqueSearchBeam<'a> {
                 if !can_continue {
                     break;
                 }
+                if let Some(ref mut observer) = &mut self.observer {
+                    observer.observe(top.as_outcome());
+                }
                 let score: f32 = top.get_score()?;
                 if self.verbose {
                     eprintln!(
@@ -293,5 +365,9 @@ impl<'a> TypedGraphCliqueSearchBeam<'a> {
             top_candidate: best_candidate,
             num_steps: 0,
         })
+    }
+
+    pub fn get_observer(self) -> TopCandidateBeamSearchObserver {
+        self.observer.unwrap()
     }
 }

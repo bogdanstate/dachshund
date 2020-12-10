@@ -47,6 +47,36 @@ pub struct Recipe {
     pub node_id: NodeId,
 }
 
+#[derive(Clone)]
+pub struct CandidateOutcome {
+    pub core_ids: HashSet<NodeId>,
+    pub non_core_ids: HashSet<NodeId>,
+    score: Option<f32>,
+    max_core_node_edges: usize,
+    ties_between_nodes: usize,
+}
+impl CandidateOutcome {
+    pub fn get_header() -> String {
+        "num_core_ids\tnum_non_core_ids\tscore\tmax_core_node_edges\tties_between_nodes".to_string()
+    }
+}
+impl fmt::Display for CandidateOutcome {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}\t{}\t{}\t{}\t{}",
+            self.core_ids.len(),
+            self.non_core_ids.len(),
+            match self.score {
+                Some(score) => format!("{}", score),
+                None => "NA".to_string(),
+            },
+            self.max_core_node_edges,
+            self.ties_between_nodes
+        )
+    }
+}
+
 /// This data structure contains everything that identifies a candidate (fuzzy) clique. To
 /// reiterate, a (fuzzy) clique is a subgraph of edges going from some set of "core" nodes
 /// to some set of "non_core" nodes. A "true" clique involves this subgraph being complete,
@@ -663,5 +693,15 @@ where
             counts.push(num_ties as f32 / max_size as f32);
         }
         counts
+    }
+
+    pub fn as_outcome(&self) -> CandidateOutcome {
+        CandidateOutcome {
+            core_ids: self.core_ids.clone(),
+            non_core_ids: self.non_core_ids.clone(),
+            score: self.score.clone(),
+            max_core_node_edges: self.max_core_node_edges,
+            ties_between_nodes: self.ties_between_nodes,
+        }
     }
 }

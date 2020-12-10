@@ -12,7 +12,7 @@ use clap::ArgMatches;
 use crate::dachshund::beam::{TypedGraphCliqueSearchBeam, TypedGraphCliqueSearchResult};
 use crate::dachshund::error::{CLQError, CLQResult};
 use crate::dachshund::graph_base::GraphBase;
-use crate::dachshund::graph_builder_base::GraphBuilderBase;
+use crate::dachshund::graph_builder_base::GraphBuilderFromVector;
 use crate::dachshund::id_types::GraphId;
 use crate::dachshund::line_processor::LineProcessorBase;
 use crate::dachshund::row::{CliqueRow, EdgeRow, Row};
@@ -183,13 +183,11 @@ impl Transformer {
         verbose: bool,
     ) -> CLQResult<TypedGraphCliqueSearchResult<'a>> {
         let mut beam = TypedGraphCliqueSearchBeam::new(
+            self.search_problem.clone(),
+            graph_id,
             graph,
             clique_rows,
             verbose,
-            self.schema.get_non_core_types(),
-            self.schema.get_num_non_core_types(),
-            self.search_problem.clone(),
-            graph_id,
         )?;
         beam.run_search()
     }

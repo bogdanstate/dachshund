@@ -29,21 +29,34 @@ where
     type GraphType;
     type RowType;
     type SchemaType;
-    fn from_vector(&mut self, data: Vec<Self::RowType>) -> CLQResult<Self::GraphType>;
     fn get_schema(&self) -> Rc<Self::SchemaType>;
 }
 
-pub trait GraphBuilderBaseWithCliques: GraphBuilderBaseWithPreProcessing
+pub trait GraphBuilderBaseWithGeneratedCliques
 where
     <Self as GraphBuilderBase>::RowType: Eq,
     <Self as GraphBuilderBase>::RowType: Hash,
+    Self: GraphBuilderBase,
 {
-    type CliquesType;
-
     fn get_clique_edges(
         &self,
         id1: NodeId,
         id2: NodeId,
     ) -> CLQResult<Vec<<Self as GraphBuilderBase>::RowType>>;
+}
+
+pub trait GraphBuilderBaseWithKnownCliques {
+    type CliquesType;
     fn get_cliques(&self) -> &Vec<Self::CliquesType>;
+}
+
+pub trait GraphBuilderFromVector: GraphBuilderBase {
+    fn from_vector(
+        &mut self,
+        data: Vec<<Self as GraphBuilderBase>::RowType>,
+    ) -> CLQResult<<Self as GraphBuilderBase>::GraphType>;
+}
+
+pub trait GraphBuilderWithRandomEdges: GraphBuilderBase {
+    fn get_random_edge(&mut self) -> CLQResult<<Self as GraphBuilderBase>::RowType>;
 }
