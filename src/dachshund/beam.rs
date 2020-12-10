@@ -54,19 +54,43 @@ impl TopCandidateBeamSearchObserver {
         self.search_problem = Some(search_problem);
     }
     pub fn get_header() -> String {
-        format!("run_id\tepoch\t{}\t{}", CandidateOutcome::get_header(), SearchProblem::get_header()).to_string()
+        format!(
+            "run_id\tepoch\t{}\t{}",
+            CandidateOutcome::get_header(),
+            SearchProblem::get_header()
+        )
+        .to_string()
     }
 }
 impl fmt::Display for TopCandidateBeamSearchObserver {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for (epoch, outcome) in self.top_candidates.iter().enumerate() {
-            write!(f, "{}\t{}\t{}\t{}\n", self.run_id, epoch, outcome, self.search_problem.as_ref().unwrap().clone().to_string())?;
+            write!(
+                f,
+                "{}\t{}\t{}\t{}\n",
+                self.run_id,
+                epoch,
+                outcome,
+                self.search_problem.as_ref().unwrap().clone().to_string()
+            )?;
         }
-        Ok(for epoch in self.top_candidates.len()..self.search_problem.as_ref().unwrap().num_epochs {
-            let outcome = self.top_candidates.get(self.top_candidates.len() - 1).unwrap();
-            write!(f, "{}\t{}\t{}\t{}\n", self.run_id, epoch, outcome, self.search_problem.as_ref().unwrap().clone().to_string())?;
-        })
-
+        Ok(
+            for epoch in self.top_candidates.len()..self.search_problem.as_ref().unwrap().num_epochs
+            {
+                let outcome = self
+                    .top_candidates
+                    .get(self.top_candidates.len() - 1)
+                    .unwrap();
+                write!(
+                    f,
+                    "{}\t{}\t{}\t{}\n",
+                    self.run_id,
+                    epoch,
+                    outcome,
+                    self.search_problem.as_ref().unwrap().clone().to_string()
+                )?;
+            },
+        )
     }
 }
 

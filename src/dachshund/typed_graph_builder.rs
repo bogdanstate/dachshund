@@ -421,6 +421,33 @@ impl TypedGraphBuilderWithCliques for TypedGraphBuilderWithCliquesOverRandomGrap
 }
 impl TypedGraphBuilderBase for TypedGraphBuilderWithCliquesOverRandomGraph {}
 impl TypedGraphBuilderWithCliquesOverRandomGraph {
+    pub fn get_serializable_cliques(
+        &self,
+    ) -> Vec<HashMap<(String, String, String), (BTreeSet<i64>, BTreeSet<i64>)>> {
+        self.cliques
+            .iter()
+            .map(|x| {
+                x.iter()
+                    .map(
+                        |((source_type, target_type, edge_type), (left_shore, right_shore))| {
+                            (
+                                (
+                                    self.schema.get_node_type_name(*source_type).unwrap(),
+                                    self.schema.get_node_type_name(*target_type).unwrap(),
+                                    self.schema.get_edge_type_name(*edge_type).unwrap(),
+                                ),
+                                (
+                                    left_shore.iter().map(|z| z.value()).collect(),
+                                    right_shore.iter().map(|z| z.value()).collect(),
+                                ),
+                            )
+                        },
+                    )
+                    .collect()
+            })
+            .collect()
+    }
+
     pub fn new(
         graph_id: GraphId,
         schema: Rc<TypedGraphSchema>,
@@ -577,7 +604,7 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
         }
         rows
     }
-    pub fn generate_graph(&mut self) -> CLQResult<TypedGraph> {
+    pub fn generate_rows(&mut self) -> Vec<EdgeRow> {
         let er_edges = self.generate_er_edges();
         let clique_edges = self.generate_clique_edges();
         let deduped = er_edges
@@ -586,7 +613,10 @@ impl TypedGraphBuilderWithCliquesOverRandomGraph {
             .collect::<BTreeSet<_>>()
             .into_iter()
             .collect::<Vec<_>>();
-
+        deduped
+    }
+    pub fn generate_graph(&mut self) -> CLQResult<TypedGraph> {
+        let deduped = self.generate_rows();
         let source_ids_vec = deduped
             .iter()
             .map(|x| x.source_id.clone())

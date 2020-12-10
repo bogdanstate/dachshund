@@ -1,0 +1,21 @@
+core_type: author
+typespec:
+  - non_core_type: book
+    edge_type: published
+    erdos_renyi_probability: 0.01
+  - non_core_type: article
+    edge_type: published
+    erdos_renyi_probability: 0.01
+node_type_counts:
+  author: 1000
+  article: 1000
+  book: 1000
+clique_sizes:
+  - num_left_shore: 10
+    right_shore_sizes:
+        - edge_type: published
+          node_type: article
+          num_nodes: 90
+        - edge_type: published
+          node_type: book
+          num_nodes: 10
